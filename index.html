@@ -48,15 +48,26 @@
             font-size: 1.2rem;
         }
 
+        .api-url-display {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+            font-size: 14px;
+            color: #495057;
+        }
+
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             color: #4a5568;
             font-weight: 500;
+            font-size: 14px;
         }
 
         .form-group input {
@@ -73,8 +84,46 @@
             border-color: #667eea;
         }
 
+        .transcription-section {
+            margin: 25px 0;
+        }
+
+        .transcription-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4a5568;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .transcription-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: vertical;
+            background: #f8f9fa;
+            color: #2d3748;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        .transcription-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+
+        .transcription-textarea.has-content {
+            background: white;
+            border-color: #48bb78;
+        }
+
         .record-section {
-            margin: 30px 0;
+            margin: 25px 0;
         }
 
         .record-button {
@@ -220,26 +269,6 @@
             border: 1px solid #90cdf4;
         }
 
-        .result-section {
-            margin-top: 30px;
-            text-align: left;
-        }
-
-        .result-section h3 {
-            color: #2d3748;
-            margin-bottom: 15px;
-        }
-
-        .result-text {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px;
-            min-height: 100px;
-            font-size: 16px;
-            line-height: 1.6;
-            color: #2d3748;
-        }
 
         .api-url-section {
             margin-bottom: 20px;
@@ -301,13 +330,10 @@
         
         <!-- API配置区域 -->
         <div class="config-section">
-            <h3>API配置</h3>
-            <div class="api-url-section">
-                <div class="form-group">
-                    <label for="apiUrl">API地址:</label>
-                    <input type="text" id="apiUrl" value="https://aliyun-voice-api.vercel.app/api/recognize" placeholder="输入你的Vercel API地址">
-                </div>
+            <div class="api-url-display">
+                <strong>API地址:</strong> https://aliyun-voice-api.vercel.app/api/recognize
             </div>
+            
             <div class="form-group">
                 <label for="appKey">AppKey:</label>
                 <input type="text" id="appKey" placeholder="阿里云应用AppKey">
@@ -321,6 +347,17 @@
                 <input type="password" id="accessKeySecret" placeholder="阿里云Access Key Secret">
             </div>
         </div>
+
+        <!-- 转录结果显示区域 -->
+        <div class="transcription-section">
+            <label for="transcriptionResult">转录结果:</label>
+            <textarea id="transcriptionResult" class="transcription-textarea" 
+                      placeholder="录音完成后，语音识别结果将显示在这里..." 
+                      readonly></textarea>
+        </div>
+
+        <!-- 状态显示区域 -->
+        <div class="status" id="status" style="display: none;"></div>
 
         <!-- 录音测试区域 -->
         <div class="record-section">
@@ -348,8 +385,6 @@
                         <rect class="waveform-progress-mask" id="waveformProgressMask" x="0" y="0" width="0" height="30" />
                     </svg>
                 </div>
-                <div id="status" class="status" style="display: none;"></div>
-                <div id="resultText" class="result-text" style="display: none;"></div>
             </div>
         </div>
     </div>
@@ -382,11 +417,11 @@
                 this.recordButton = document.getElementById('recordButton');
                 this.downloadButton = document.getElementById('downloadButton');
                 this.status = document.getElementById('status');
-                this.resultText = document.getElementById('resultText');
+                this.transcriptionResult = document.getElementById('transcriptionResult');
                 this.waveformContainer = document.getElementById('waveformContainer');
                 
-                // 配置输入框
-                this.apiUrl = document.getElementById('apiUrl');
+                // 配置输入框 - 使用固定的API地址
+                this.apiUrl = { value: 'https://aliyun-voice-api.vercel.app/api/recognize' };
                 this.appKey = document.getElementById('appKey');
                 this.accessKeyId = document.getElementById('accessKeyId');
                 this.accessKeySecret = document.getElementById('accessKeySecret');
@@ -640,6 +675,10 @@
 
             async processRecording() {
                 try {
+                    // 更新按钮状态为识别中
+                    this.recordButton.textContent = '识别中...';
+                    this.recordButton.disabled = true;
+                    
                     const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
                     
                     // 转换为base64
@@ -649,12 +688,16 @@
                     this.currentAudioBlob = audioBlob;
                     this.currentAudioBase64 = audioBase64;
                     
-                    this.showStatus('录音处理完成，可以进行API测试', 'success');
-                    this.showAPITestOptions();
+                    // 自动调用语音识别
+                    await this.recognizeAudio(audioBase64);
                     
                 } catch (error) {
                     console.error('录音处理失败:', error);
                     this.showStatus('录音处理失败: ' + error.message, 'error');
+                } finally {
+                    // 恢复按钮状态
+                    this.recordButton.textContent = '开始录音测试';
+                    this.recordButton.disabled = false;
                 }
             }
 
@@ -717,8 +760,8 @@
                         setTimeout(() => {
                             this.waveformContainer.style.display = 'none';
                             if (recognizedText) {
-                                this.resultText.textContent = recognizedText;
-                                this.resultText.style.display = 'block';
+                                this.transcriptionResult.value = recognizedText;
+                                this.transcriptionResult.classList.add('has-content');
                             }
                             this.showStatus('识别成功！', 'success');
                             this.downloadButton.style.display = 'inline-block';
@@ -728,13 +771,15 @@
                     } else {
                         console.error('❌ 识别失败:', result.error);
                         this.showStatus('识别失败: ' + result.error, 'error');
-                        this.resultText.textContent = '识别失败: ' + result.error;
+                        this.transcriptionResult.value = '识别失败: ' + result.error;
+                        this.transcriptionResult.classList.remove('has-content');
                     }
                     
                 } catch (error) {
                     console.error('❌ API调用异常:', error);
                     this.showStatus('API调用失败: ' + error.message, 'error');
-                    this.resultText.textContent = 'API调用失败: ' + error.message;
+                    this.transcriptionResult.value = 'API调用失败: ' + error.message;
+                    this.transcriptionResult.classList.remove('has-content');
                 }
             }
 
@@ -782,7 +827,8 @@
                     
                     // 重置所有显示
                     this.waveformContainer.style.display = 'block';
-                    this.resultText.style.display = 'none';
+                    this.transcriptionResult.value = '';
+                    this.transcriptionResult.classList.remove('has-content');
                     this.status.style.display = 'none';
                     this.downloadButton.style.display = 'none';
                     this.apiTestSection.style.display = 'none';
@@ -831,12 +877,12 @@
                     if (result.success) {
                         this.currentToken = result.token;
                         this.showStatus(`Token获取成功: ${result.token.substring(0, 16)}...`, 'success');
-                        this.resultText.style.display = 'block';
-                        this.resultText.textContent = `Token: ${result.token}\n过期时间: ${result.expireTime}`;
+                        this.transcriptionResult.value = `Token: ${result.token}\n过期时间: ${result.expireTime}`;
+                        this.transcriptionResult.classList.add('has-content');
                     } else {
                         this.showStatus(`Token获取失败: ${result.error}`, 'error');
-                        this.resultText.style.display = 'block';
-                        this.resultText.textContent = `错误: ${result.error}`;
+                        this.transcriptionResult.value = `错误: ${result.error}`;
+                        this.transcriptionResult.classList.remove('has-content');
                     }
 
                 } catch (error) {
@@ -886,12 +932,12 @@
 
                     if (result.success) {
                         this.showStatus('语音识别成功!', 'success');
-                        this.resultText.style.display = 'block';
-                        this.resultText.textContent = `识别结果: ${result.result}`;
+                        this.transcriptionResult.value = result.result;
+                        this.transcriptionResult.classList.add('has-content');
                     } else {
                         this.showStatus(`语音识别失败: ${result.error}`, 'error');
-                        this.resultText.style.display = 'block';
-                        this.resultText.textContent = `错误: ${result.error}`;
+                        this.transcriptionResult.value = `错误: ${result.error}`;
+                        this.transcriptionResult.classList.remove('has-content');
                     }
 
                 } catch (error) {
@@ -936,12 +982,12 @@
 
                     if (result.success) {
                         this.showStatus('统一API测试成功!', 'success');
-                        this.resultText.style.display = 'block';
-                        this.resultText.textContent = `识别结果: ${result.data.text}\n置信度: ${result.data.confidence}\n时长: ${result.data.duration}s`;
+                        this.transcriptionResult.value = `识别结果: ${result.data.text}\n置信度: ${result.data.confidence}\n时长: ${result.data.duration}s`;
+                        this.transcriptionResult.classList.add('has-content');
                     } else {
                         this.showStatus(`统一API测试失败: ${result.error}`, 'error');
-                        this.resultText.style.display = 'block';
-                        this.resultText.textContent = `错误: ${result.error}`;
+                        this.transcriptionResult.value = `错误: ${result.error}`;
+                        this.transcriptionResult.classList.remove('has-content');
                     }
 
                 } catch (error) {
