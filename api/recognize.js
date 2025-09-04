@@ -94,31 +94,65 @@ async function getAliyunToken(accessKeyId, accessKeySecret) {
 }
 
 /**
- * 语音识别函数
+ * 语音识别函数 - 使用阿里云一句话识别API
  */
 async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
   try {
-    // 这里实现实际的语音识别逻辑
-    // 由于阿里云语音识别需要WebSocket连接，这里提供一个简化版本
+    console.log(`开始语音识别，音频大小: ${audioBuffer.length} bytes`);
     
-    // 模拟语音识别结果（实际应用中需要连接阿里云实时语音识别服务）
-    // 避免处理过大的音频数据导致栈溢出
-    const audioSize = audioBuffer.length;
-    const estimatedDuration = Math.min(audioSize / 16000, maxDuration);
+    // 阿里云一句话识别API端点
+    const recognitionUrl = 'https://nls-gateway-cn-shanghai.aliyuncs.com/stream/v1/asr';
     
-    const mockResult = {
-      success: true,
-      text: `语音识别测试成功！音频大小: ${(audioSize/1024).toFixed(1)}KB, 预估时长: ${estimatedDuration.toFixed(1)}秒`,
-      confidence: 0.95,
-      duration: estimatedDuration
-    };
-
-    return mockResult;
+    // 构建请求参数
+    const params = new URLSearchParams({
+      appkey: appKey,
+      token: token,
+      format: 'wav', // 假设音频格式为WAV
+      sample_rate: '16000',
+      enable_punctuation_prediction: 'true',
+      enable_inverse_text_normalization: 'true'
+    });
+    
+    // 发送POST请求到阿里云语音识别API
+    const response = await fetch(`${recognitionUrl}?${params.toString()}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': audioBuffer.length.toString()
+      },
+      body: audioBuffer
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('阿里云API响应错误:', response.status, errorText);
+      throw new Error(`阿里云API调用失败: ${response.status} ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('阿里云API响应:', result);
+    
+    // 处理阿里云API响应
+    if (result.status === 20000000) { // 成功状态码
+      return {
+        success: true,
+        text: result.result || '识别结果为空',
+        confidence: result.confidence || 0.9,
+        duration: Math.min(audioBuffer.length / 16000, maxDuration)
+      };
+    } else {
+      console.error('语音识别失败:', result);
+      return {
+        success: false,
+        error: result.message || `识别失败，状态码: ${result.status}`
+      };
+    }
+    
   } catch (error) {
-    console.error('语音识别失败:', error);
+    console.error('语音识别异常:', error);
     return {
       success: false,
-      error: error.message
+      error: `语音识别异常: ${error.message}`
     };
   }
 }
