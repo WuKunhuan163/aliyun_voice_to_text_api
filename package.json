@@ -9,7 +9,9 @@
     "test": "node test-api.js",
     "test:prod": "node test-api.js https://your-app-name.vercel.app"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@alicloud/pop-core": "^1.8.0"
+  },
   "devDependencies": {
     "@vercel/node": "^2.15.10"
   },
