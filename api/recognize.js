@@ -123,6 +123,11 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
  * Vercel Function 主函数
  */
 export default async function handler(req, res) {
+  // 设置CORS头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
+  
   // 处理CORS预检请求
   if (req.method === 'OPTIONS') {
     res.status(200).end();
