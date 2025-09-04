@@ -191,24 +191,6 @@
             font-size: 13px;
         }
 
-        .test-result {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-
-        .test-success {
-            background: #c6f6d5;
-            color: #22543d;
-            border: 2px solid #9ae6b4;
-        }
-
-        .test-failed {
-            background: #fed7d7;
-            color: #742a2a;
-            border: 2px solid #feb2b2;
-        }
     </style>
 </head>
 <body>
@@ -252,7 +234,6 @@
         <div class="result-section">
             <h3>识别结果</h3>
             <div id="resultText" class="result-text">等待录音识别...</div>
-            <div id="testResult" class="test-result" style="display: none;"></div>
         </div>
     </div>
 
@@ -279,7 +260,6 @@
                 this.ctx = this.canvas.getContext('2d');
                 this.status = document.getElementById('status');
                 this.resultText = document.getElementById('resultText');
-                this.testResult = document.getElementById('testResult');
                 
                 // 配置输入框
                 this.apiUrl = document.getElementById('apiUrl');
@@ -489,43 +469,62 @@
 
             async recognizeAudio(audioBase64) {
                 try {
+                    console.log('🚀 开始API调用...');
+                    console.log('📊 音频数据大小:', audioBase64.length, '字符 (base64)');
+                    console.log('🔗 API地址:', this.apiUrl.value);
+                    console.log('🔐 AppKey:', this.appKey.value);
+                    console.log('🔑 AccessKeyId:', this.accessKeyId.value);
+                    
                     this.showStatus('正在调用API进行语音识别...', 'processing');
+                    
+                    const requestBody = {
+                        audioData: audioBase64,
+                        appKey: this.appKey.value,
+                        accessKeyId: this.accessKeyId.value,
+                        accessKeySecret: this.accessKeySecret.value,
+                        maxDuration: 60
+                    };
+                    
+                    console.log('📤 发送请求体:', {
+                        ...requestBody,
+                        audioData: `[${audioBase64.length} chars]`,
+                        accessKeySecret: '[HIDDEN]'
+                    });
                     
                     const response = await fetch(this.apiUrl.value, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({
-                            audioData: audioBase64,
-                            appKey: this.appKey.value,
-                            accessKeyId: this.accessKeyId.value,
-                            accessKeySecret: this.accessKeySecret.value,
-                            maxDuration: 60
-                        })
+                        body: JSON.stringify(requestBody)
                     });
 
+                    console.log('📡 响应状态:', response.status, response.statusText);
+                    
                     const result = await response.json();
+                    console.log('📥 完整响应:', result);
                     
                     if (result.success) {
-                        const recognizedText = result.data.text;
-                        this.resultText.textContent = recognizedText;
+                        const recognizedText = result.data ? result.data.text : '';
+                        console.log('✅ 识别成功！文本内容:', `"${recognizedText}"`);
+                        console.log('📝 文本长度:', recognizedText.length);
+                        
+                        this.resultText.textContent = recognizedText || '识别结果为空';
                         this.showStatus('识别成功！', 'success');
                         
                         // 检查测试结果
                         this.checkTestResult(recognizedText);
                         
                     } else {
+                        console.error('❌ 识别失败:', result.error);
                         this.showStatus('识别失败: ' + result.error, 'error');
                         this.resultText.textContent = '识别失败: ' + result.error;
-                        this.showTestResult(false, result.error);
                     }
                     
                 } catch (error) {
-                    console.error('API调用失败:', error);
+                    console.error('❌ API调用异常:', error);
                     this.showStatus('API调用失败: ' + error.message, 'error');
                     this.resultText.textContent = 'API调用失败: ' + error.message;
-                    this.showTestResult(false, error.message);
                 }
             }
 
@@ -534,16 +533,10 @@
                 const isSuccess = textLength >= 10;
                 
                 if (isSuccess) {
-                    this.showTestResult(true, `测试成功！识别文本长度: ${textLength} 字符`);
+                    this.showStatus(`测试成功！识别文本长度: ${textLength} 字符`, 'success');
                 } else {
-                    this.showTestResult(false, `测试未完全成功，识别文本长度: ${textLength} 字符 (需要≥10字符)`);
+                    this.showStatus(`测试未完全成功，识别文本长度: ${textLength} 字符 (需要≥10字符)`, 'error');
                 }
-            }
-
-            showTestResult(success, message) {
-                this.testResult.style.display = 'block';
-                this.testResult.className = `test-result ${success ? 'test-success' : 'test-failed'}`;
-                this.testResult.textContent = message;
             }
 
             updateUI() {
