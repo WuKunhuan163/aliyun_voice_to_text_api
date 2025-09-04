@@ -94,26 +94,31 @@ async function getAliyunToken(accessKeyId, accessKeySecret) {
 }
 
 /**
- * 语音识别函数 - 使用阿里云一句话识别API
+ * 语音识别函数 - 使用阿里云实时语音识别API
  */
 async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
   try {
-    console.log(`开始语音识别，音频大小: ${audioBuffer.length} bytes`);
+    console.log(`开始实时语音识别，音频大小: ${audioBuffer.length} bytes`);
     
-    // 阿里云一句话识别API端点
-    const recognitionUrl = 'https://nls-gateway-cn-shanghai.aliyuncs.com/stream/v1/asr';
+    // 阿里云实时语音识别API端点
+    const recognitionUrl = 'https://nls-gateway-cn-shanghai.aliyuncs.com/stream/v1/FlashRecognizer';
     
     // 构建请求参数
     const params = new URLSearchParams({
       appkey: appKey,
       token: token,
-      format: 'wav', // 假设音频格式为WAV
+      format: 'pcm', // 实时识别通常使用PCM格式
       sample_rate: '16000',
       enable_punctuation_prediction: 'true',
-      enable_inverse_text_normalization: 'true'
+      enable_inverse_text_normalization: 'true',
+      enable_voice_detection: 'false', // 关闭静音检测，处理完整音频
+      max_end_silence: '800', // 最大结束静音时间
+      max_start_silence: '10000' // 最大开始静音时间
     });
     
-    // 发送POST请求到阿里云语音识别API
+    console.log('发送实时语音识别请求到阿里云...');
+    
+    // 发送POST请求到阿里云实时语音识别API
     const response = await fetch(`${recognitionUrl}?${params.toString()}`, {
       method: 'POST',
       headers: {
@@ -125,15 +130,31 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('阿里云API响应错误:', response.status, errorText);
-      throw new Error(`阿里云API调用失败: ${response.status} ${errorText}`);
+      console.error('阿里云实时识别API响应错误:', response.status, errorText);
+      throw new Error(`阿里云实时识别API调用失败: ${response.status} ${errorText}`);
     }
     
     const result = await response.json();
-    console.log('阿里云API响应:', result);
+    console.log('阿里云实时识别API响应:', result);
     
-    // 处理阿里云API响应
-    if (result.status === 20000000) { // 成功状态码
+    // 处理阿里云实时识别API响应
+    if (result.flash_result && result.flash_result.sentences) {
+      // 合并所有句子的识别结果
+      const sentences = result.flash_result.sentences;
+      const fullText = sentences.map(sentence => sentence.text).join('');
+      const avgConfidence = sentences.reduce((sum, sentence) => sum + (sentence.confidence || 0), 0) / sentences.length;
+      
+      console.log(`实时识别成功，识别出 ${sentences.length} 个句子`);
+      
+      return {
+        success: true,
+        text: fullText || '识别结果为空',
+        confidence: avgConfidence || 0.9,
+        duration: Math.min(audioBuffer.length / 16000, maxDuration),
+        sentences: sentences.length
+      };
+    } else if (result.status === 20000000) {
+      // 兼容一句话识别格式
       return {
         success: true,
         text: result.result || '识别结果为空',
@@ -141,18 +162,18 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
         duration: Math.min(audioBuffer.length / 16000, maxDuration)
       };
     } else {
-      console.error('语音识别失败:', result);
+      console.error('实时语音识别失败:', result);
       return {
         success: false,
-        error: result.message || `识别失败，状态码: ${result.status}`
+        error: result.message || `实时识别失败，状态码: ${result.status}`
       };
     }
     
   } catch (error) {
-    console.error('语音识别异常:', error);
+    console.error('实时语音识别异常:', error);
     return {
       success: false,
-      error: `语音识别异常: ${error.message}`
+      error: `实时语音识别异常: ${error.message}`
     };
   }
 }
