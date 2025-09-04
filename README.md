@@ -174,3 +174,4 @@ function blobToBase64(blob) {
 如有问题，请查看：
 1. [Vercel Functions文档](https://vercel.com/docs/functions)
 2. [阿里云语音识别文档](https://help.aliyun.com/product/30413.html)
+// Force redeploy
