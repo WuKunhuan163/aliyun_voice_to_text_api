@@ -9,10 +9,7 @@
     "test": "node test-api.js",
     "test:prod": "node test-api.js https://your-app-name.vercel.app"
   },
-  "dependencies": {
-    "crypto": "^1.0.1",
-    "querystring": "^0.2.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@vercel/node": "^2.15.10"
   },
