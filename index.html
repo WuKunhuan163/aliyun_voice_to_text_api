@@ -170,11 +170,10 @@
             fill: rgba(40, 167, 69, 0.3) !important;
         }
 
-        .timer {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #667eea;
-            margin: 15px 0;
+        .shared-container {
+            margin: 20px 0;
+            min-height: 60px;
+            position: relative;
         }
 
         .status {
@@ -264,24 +263,21 @@
         <!-- 录音测试区域 -->
         <div class="record-section">
             <button id="recordButton" class="record-button">开始录音测试</button>
-            <div class="timer" id="timer">30</div>
-            <div class="waveform-container" id="waveformContainer">
-                <svg class="waveform-svg" id="waveformSvg" width="100%" height="30" viewBox="0 0 1000 30" preserveAspectRatio="none">
-                    <!-- 背景 -->
-                    <rect class="waveform-background" x="0" y="0" width="1000" height="30" />
-                    <!-- 峰值区域将动态生成 -->
-                    <g id="waveformBars"></g>
-                    <!-- 进度遮罩 -->
-                    <rect class="waveform-progress-mask" id="waveformProgressMask" x="0" y="0" width="0" height="30" />
-                </svg>
+            <!-- 共享容器：进度条和状态/结果 -->
+            <div class="shared-container" id="sharedContainer">
+                <div class="waveform-container" id="waveformContainer">
+                    <svg class="waveform-svg" id="waveformSvg" width="100%" height="30" viewBox="0 0 1000 30" preserveAspectRatio="none">
+                        <!-- 背景 -->
+                        <rect class="waveform-background" x="0" y="0" width="1000" height="30" />
+                        <!-- 峰值区域将动态生成 -->
+                        <g id="waveformBars"></g>
+                        <!-- 进度遮罩 -->
+                        <rect class="waveform-progress-mask" id="waveformProgressMask" x="0" y="0" width="0" height="30" />
+                    </svg>
+                </div>
+                <div id="status" class="status" style="display: none;"></div>
+                <div id="resultText" class="result-text" style="display: none;"></div>
             </div>
-            <div id="status" class="status" style="display: none;"></div>
-        </div>
-
-        <!-- 结果显示区域 -->
-        <div class="result-section">
-            <h3>识别结果</h3>
-            <div id="resultText" class="result-text">等待录音识别...</div>
         </div>
     </div>
 
@@ -447,19 +443,24 @@
             updateWaveformOnTimer() {
                 if (!this.isRecording || !this.analyser) return;
 
-                // 获取当前音频频率数据
-                const bufferLength = this.analyser.frequencyBinCount;
+                // 获取时域数据（音频波形）而不是频域数据
+                const bufferLength = this.analyser.fftSize;
                 const dataArray = new Uint8Array(bufferLength);
-                this.analyser.getByteFrequencyData(dataArray);
+                this.analyser.getByteTimeDomainData(dataArray);
 
-                // 计算当前振幅（RMS值）
+                // 计算RMS值（均方根）
                 let sum = 0;
                 for (let i = 0; i < bufferLength; i++) {
-                    sum += dataArray[i] * dataArray[i];
+                    // 将0-255范围转换为-1到1的浮点数
+                    const sample = (dataArray[i] - 128) / 128;
+                    sum += sample * sample;
                 }
-                this.currentAmplitude = Math.sqrt(sum / bufferLength) / 255;
+                const rms = Math.sqrt(sum / bufferLength);
+                
+                // 更新当前振幅（取最大值）
+                this.currentAmplitude = Math.max(this.currentAmplitude, rms);
 
-                // 计算峰值高度
+                // 计算峰值高度（减小放大倍数，与原项目一致）
                 const height = Math.min(25, Math.max(1, this.currentAmplitude * 150));
                 
                 // 添加到峰图数据
@@ -613,14 +614,16 @@
                         console.log('✅ 识别成功！文本内容:', `"${recognizedText}"`);
                         console.log('📝 文本长度:', recognizedText.length);
                         
-                        this.resultText.textContent = recognizedText || '识别结果为空';
-                        this.showStatus('识别成功！', 'success');
-                        
-                        // 添加成功样式到波形图
-                        this.waveformContainer.classList.add('success');
-                        
-                        // 检查测试结果
-                        this.checkTestResult(recognizedText);
+                        // 延迟清除进度条并显示结果
+                        setTimeout(() => {
+                            this.waveformContainer.style.display = 'none';
+                            if (recognizedText) {
+                                this.resultText.textContent = recognizedText;
+                                this.resultText.style.display = 'block';
+                            }
+                            this.showStatus('识别成功！', 'success');
+                            this.checkTestResult(recognizedText);
+                        }, 1000);
                         
                     } else {
                         console.error('❌ 识别失败:', result.error);
@@ -651,13 +654,16 @@
                     this.recordButton.textContent = '停止录音';
                     this.recordButton.classList.add('recording');
                     this.waveformContainer.classList.add('recording');
+                    this.waveformContainer.style.display = 'block';
                 } else {
                     this.recordButton.textContent = '开始录音测试';
                     this.recordButton.classList.remove('recording');
-                    this.waveformContainer.classList.remove('recording');
-                    this.timer.textContent = '30';
+                    this.waveformContainer.classList.remove('recording', 'success');
                     
-                    // 重置波形图
+                    // 重置所有显示
+                    this.waveformContainer.style.display = 'block';
+                    this.resultText.style.display = 'none';
+                    this.status.style.display = 'none';
                     this.initWaveform();
                 }
             }

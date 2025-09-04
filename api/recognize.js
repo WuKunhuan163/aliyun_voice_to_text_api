@@ -118,8 +118,8 @@ async function recognizeAudio(audioData, appKey, token, maxDuration = 60) {
     const requestUrl = `${nlsUrl}?${params}`;
     console.log('🔗 调用阿里云NLS API:', requestUrl.substring(0, 100) + '...');
     
-    // 将音频数据转换为Buffer（按照原来的方式）
-    const audioBuffer = Buffer.from(audioData);
+    // 将base64音频数据转换为Buffer（audioData是base64字符串）
+    const audioBuffer = Buffer.from(audioData, 'base64');
     console.log('📊 发送音频数据大小:', audioBuffer.length, 'bytes');
     
     // 发送POST请求到阿里云NLS API
