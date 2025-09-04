@@ -106,6 +106,25 @@
             animation: pulse 2s infinite;
         }
 
+        .download-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+
+        .download-button:hover {
+            background: linear-gradient(135deg, #218838, #1ea085);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+
         @keyframes pulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
@@ -263,6 +282,7 @@
         <!-- 录音测试区域 -->
         <div class="record-section">
             <button id="recordButton" class="record-button">开始录音测试</button>
+            <button id="downloadButton" class="download-button" style="display: none;">下载录音</button>
             <!-- 共享容器：进度条和状态/结果 -->
             <div class="shared-container" id="sharedContainer">
                 <div class="waveform-container" id="waveformContainer">
@@ -307,7 +327,7 @@
 
             initElements() {
                 this.recordButton = document.getElementById('recordButton');
-                this.timer = document.getElementById('timer');
+                this.downloadButton = document.getElementById('downloadButton');
                 this.status = document.getElementById('status');
                 this.resultText = document.getElementById('resultText');
                 this.waveformContainer = document.getElementById('waveformContainer');
@@ -340,6 +360,10 @@
                     } else {
                         this.startRecording();
                     }
+                });
+
+                this.downloadButton.addEventListener('click', () => {
+                    this.downloadRecording();
                 });
             }
 
@@ -426,7 +450,6 @@
             startTimer() {
                 this.recordingTimer = setInterval(() => {
                     this.timeLeft--;
-                    this.timer.textContent = this.timeLeft;
                     
                     if (this.timeLeft <= 0) {
                         this.stopRecording();
@@ -622,6 +645,7 @@
                                 this.resultText.style.display = 'block';
                             }
                             this.showStatus('识别成功！', 'success');
+                            this.downloadButton.style.display = 'inline-block';
                             this.checkTestResult(recognizedText);
                         }, 1000);
                         
@@ -649,12 +673,31 @@
                 }
             }
 
+            downloadRecording() {
+                if (!this.recordedBlob) {
+                    this.showStatus('没有录音数据可下载', 'error');
+                    return;
+                }
+
+                const url = URL.createObjectURL(this.recordedBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `recording_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                this.showStatus('录音已下载', 'success');
+            }
+
             updateUI() {
                 if (this.isRecording) {
                     this.recordButton.textContent = '停止录音';
                     this.recordButton.classList.add('recording');
                     this.waveformContainer.classList.add('recording');
                     this.waveformContainer.style.display = 'block';
+                    this.downloadButton.style.display = 'none';
                 } else {
                     this.recordButton.textContent = '开始录音测试';
                     this.recordButton.classList.remove('recording');
@@ -664,6 +707,7 @@
                     this.waveformContainer.style.display = 'block';
                     this.resultText.style.display = 'none';
                     this.status.style.display = 'none';
+                    this.downloadButton.style.display = 'none';
                     this.initWaveform();
                 }
             }
