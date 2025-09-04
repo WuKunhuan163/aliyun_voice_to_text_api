@@ -49,29 +49,30 @@
         }
 
         .api-url-display {
-            background: #f8f9fa;
-            padding: 12px 16px;
-            border-radius: 8px;
             margin-bottom: 20px;
-            border-left: 4px solid #667eea;
             font-size: 14px;
             color: #495057;
+            text-align: left;
         }
 
         .form-group {
             margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .form-group label {
-            display: block;
-            margin-bottom: 3px;
+            min-width: 140px;
             color: #4a5568;
             font-weight: 500;
             font-size: 14px;
+            text-align: left;
+            margin: 0;
         }
 
         .form-group input {
-            width: 100%;
+            flex: 1;
             padding: 12px;
             border: 2px solid #e2e8f0;
             border-radius: 8px;
@@ -86,14 +87,47 @@
 
         .transcription-section {
             margin: 25px 0;
+            position: relative;
         }
 
-        .transcription-section label {
-            display: block;
-            margin-bottom: 8px;
-            color: #4a5568;
-            font-weight: 500;
-            font-size: 14px;
+        .transcription-progress {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            height: 25px;
+            background: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+            border: 2px solid #e2e8f0;
+            border-bottom: none;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .waveform-mini {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            right: 2px;
+            height: 15px;
+            display: flex;
+            align-items: end;
+            gap: 1px;
+        }
+
+        .waveform-bar {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 1px;
+            min-height: 2px;
+            transition: height 0.1s ease;
         }
 
         .transcription-textarea {
@@ -104,11 +138,16 @@
             border-radius: 12px;
             font-size: 15px;
             line-height: 1.6;
-            resize: vertical;
+            resize: none;
             background: #f8f9fa;
             color: #2d3748;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        .transcription-textarea.recording {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
         }
 
         .transcription-textarea:focus {
@@ -251,21 +290,7 @@
             100% { transform: scale(1); }
         }
 
-        .waveform-container {
-            width: 100%;
-            height: 30px;
-            margin: 10px 0;
-            padding: 0;
-            border-radius: 4px;
-            overflow: hidden;
-            background: transparent;
-        }
 
-        .waveform-svg {
-            display: block;
-            width: 100%;
-            height: 30px;
-        }
 
         .waveform-background {
             fill: #e9ecef;
@@ -391,7 +416,12 @@
 
         <!-- 转录结果显示区域 -->
         <div class="transcription-section">
-            <label for="transcriptionResult">转录结果:</label>
+            <div class="transcription-progress" id="transcriptionProgress">
+                <div class="progress-bar" id="progressBar"></div>
+                <div class="waveform-mini" id="waveformMini">
+                    <!-- 波形条将由JavaScript动态生成 -->
+                </div>
+            </div>
             <textarea id="transcriptionResult" class="transcription-textarea" 
                       placeholder="录音完成后，语音识别结果将显示在这里..." 
                       readonly></textarea>
@@ -404,19 +434,6 @@
         <div class="record-section">
             <button id="recordButton" class="record-button" disabled>开始录音测试</button>
             <button id="downloadButton" class="download-button" style="display: none;">下载录音</button>
-            <!-- 共享容器：进度条和状态/结果 -->
-            <div class="shared-container" id="sharedContainer">
-                <div class="waveform-container" id="waveformContainer">
-                    <svg class="waveform-svg" id="waveformSvg" width="100%" height="30" viewBox="0 0 1000 30" preserveAspectRatio="none">
-                        <!-- 背景 -->
-                        <rect class="waveform-background" x="0" y="0" width="1000" height="30" />
-                        <!-- 峰值区域将动态生成 -->
-                        <g id="waveformBars"></g>
-                        <!-- 进度遮罩 -->
-                        <rect class="waveform-progress-mask" id="waveformProgressMask" x="0" y="0" width="0" height="30" />
-                    </svg>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -449,7 +466,11 @@
                 this.downloadButton = document.getElementById('downloadButton');
                 this.status = document.getElementById('status');
                 this.transcriptionResult = document.getElementById('transcriptionResult');
-                this.waveformContainer = document.getElementById('waveformContainer');
+                
+                // 新的进度条和波形图元素
+                this.transcriptionProgress = document.getElementById('transcriptionProgress');
+                this.progressBar = document.getElementById('progressBar');
+                this.waveformMini = document.getElementById('waveformMini');
                 
                 // 配置输入框 - 使用固定的API地址
                 this.apiUrl = { value: 'https://aliyun-voice-api.vercel.app/api/recognize' };
@@ -461,18 +482,20 @@
                 this.tokenField = document.getElementById('tokenField');
                 this.tokenStatus = document.getElementById('tokenStatus');
                 
-                this.initWaveform();
+                this.initMiniWaveform();
             }
 
-            initWaveform() {
+            initMiniWaveform() {
                 this.waveformData = [];
-                const waveformBars = document.getElementById('waveformBars');
-                if (waveformBars) {
-                    waveformBars.innerHTML = '';
-                }
-                const progressMask = document.getElementById('waveformProgressMask');
-                if (progressMask) {
-                    progressMask.setAttribute('width', '0');
+                this.waveformBars = [];
+                
+                // 创建50个波形条
+                this.waveformMini.innerHTML = '';
+                for (let i = 0; i < 50; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'waveform-bar';
+                    this.waveformMini.appendChild(bar);
+                    this.waveformBars.push(bar);
                 }
             }
 
@@ -589,9 +612,14 @@
                     this.timeLeft = 30;
                     this.recordingStartTime = Date.now();
                     
+                    // 显示进度条和更改文本框内容
+                    this.transcriptionProgress.style.display = 'block';
+                    this.transcriptionResult.classList.add('recording');
+                    this.transcriptionResult.placeholder = '录音识别中...';
+                    
                     this.updateUI();
                     this.startTimer();
-                    this.startWaveformTimer();
+                    this.startMiniWaveformTimer();
                     
                     this.showStatus('开始录音...', 'processing');
 
@@ -655,90 +683,31 @@
                 }, 1000);
             }
 
-            startWaveformTimer() {
+            startMiniWaveformTimer() {
                 this.waveformTimer = setInterval(() => {
-                    this.updateWaveformOnTimer();
+                    this.updateMiniWaveform();
+                    this.updateProgressBar();
                 }, this.waveformUpdateInterval);
             }
 
-            updateWaveformOnTimer() {
-                if (!this.isRecording || !this.analyser) return;
-
-                // 获取时域数据（音频波形）而不是频域数据
-                const bufferLength = this.analyser.fftSize;
-                const dataArray = new Uint8Array(bufferLength);
-                this.analyser.getByteTimeDomainData(dataArray);
-
-                // 计算RMS值（均方根）
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    // 将0-255范围转换为-1到1的浮点数
-                    const sample = (dataArray[i] - 128) / 128;
-                    sum += sample * sample;
-                }
-                const rms = Math.sqrt(sum / bufferLength);
-                
-                // 更新当前振幅（取最大值）
-                this.currentAmplitude = Math.max(this.currentAmplitude, rms);
-
-                // 计算峰值高度（减小放大倍数，与原项目一致）
-                const height = Math.min(25, Math.max(1, this.currentAmplitude * 150));
-                
-                // 添加到峰图数据
-                this.waveformData.push(height);
-                
-                // 重置当前振幅，准备下一次采样
-                this.currentAmplitude = 0;
-                
-                // 更新SVG显示
-                this.renderWaveform();
-            }
-
-            renderWaveform() {
-                const waveformBars = document.getElementById('waveformBars');
-                if (!waveformBars) return;
-                
-                // 清空现有的峰值条
-                waveformBars.innerHTML = '';
-                
-                // 计算当前录音进度
-                const elapsed = this.isRecording ? (Date.now() - this.recordingStartTime) / 1000 : 30;
-                const totalBarsToShow = Math.min(this.maxWaveformBars, Math.ceil(elapsed * 10)); // 每秒10个峰值条
-                
-                // 计算每个峰值条的宽度
-                const barWidth = 1000 / this.maxWaveformBars; // SVG viewBox宽度为1000
-                
-                // 绘制峰值条（从最新的数据开始，向前显示）
-                const startIndex = Math.max(0, this.waveformData.length - totalBarsToShow);
-                for (let i = 0; i < totalBarsToShow && i < this.waveformData.length; i++) {
-                    const dataIndex = startIndex + i;
-                    if (dataIndex < this.waveformData.length) {
-                        const height = this.waveformData[dataIndex];
-                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        rect.setAttribute('class', 'waveform-bar');
-                        rect.setAttribute('x', i * barWidth);
-                        rect.setAttribute('y', 30 - height); // 从底部开始
-                        rect.setAttribute('width', barWidth * 0.8); // 留一点间隙
-                        rect.setAttribute('height', height);
-                        waveformBars.appendChild(rect);
-                    }
-                }
-                
-                // 更新进度遮罩
-                this.updateWaveformProgress();
-            }
-
-            updateWaveformProgress() {
-                const progressMask = document.getElementById('waveformProgressMask');
-                if (!progressMask || !this.isRecording) return;
-                
-                // 计算进度百分比
+            updateProgressBar() {
                 const elapsed = Date.now() - this.recordingStartTime;
-                const progress = Math.min(100, (elapsed / (30 * 1000)) * 100);
-                
-                // 更新进度遮罩宽度
-                progressMask.setAttribute('width', (progress / 100) * 1000);
+                const progress = Math.min((elapsed / (30 * 1000)) * 100, 100);
+                this.progressBar.style.width = progress + '%';
             }
+
+            updateMiniWaveform() {
+                // 模拟音频峰值
+                const amplitude = this.currentAmplitude || Math.random() * 0.8 + 0.1;
+                
+                // 更新波形条
+                this.waveformBars.forEach((bar, index) => {
+                    const randomHeight = Math.random() * amplitude * 100 + 10;
+                    bar.style.height = Math.min(randomHeight, 100) + '%';
+                });
+            }
+
+
 
             stopRecording() {
                 if (!this.isRecording) return;
@@ -760,6 +729,11 @@
                     this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
                 }
 
+                // 隐藏进度条并恢复文本框
+                this.transcriptionProgress.style.display = 'none';
+                this.transcriptionResult.classList.remove('recording');
+                this.transcriptionResult.placeholder = '录音完成后，语音识别结果将显示在这里...';
+                
                 this.updateUI();
                 this.showStatus('录音结束，正在处理...', 'processing');
             }
@@ -913,23 +887,20 @@
                 if (this.isRecording) {
                     this.recordButton.textContent = '停止录音';
                     this.recordButton.classList.add('recording');
-                    this.waveformContainer.classList.add('recording');
-                    this.waveformContainer.style.display = 'block';
                     this.downloadButton.style.display = 'none';
-                    this.apiTestSection.style.display = 'none';
                 } else {
                     this.recordButton.textContent = '开始录音测试';
                     this.recordButton.classList.remove('recording');
-                    this.waveformContainer.classList.remove('recording', 'success');
                     
                     // 重置所有显示
-                    this.waveformContainer.style.display = 'block';
                     this.transcriptionResult.value = '';
                     this.transcriptionResult.classList.remove('has-content');
                     this.status.style.display = 'none';
                     this.downloadButton.style.display = 'none';
-                    this.apiTestSection.style.display = 'none';
-                    this.initWaveform();
+                    
+                    // 重置进度条
+                    this.progressBar.style.width = '0%';
+                    this.initMiniWaveform();
                 }
             }
 
