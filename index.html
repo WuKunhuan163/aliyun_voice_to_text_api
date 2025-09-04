@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿里云语音识别API测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        .config-section {
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .config-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .record-section {
+            margin: 30px 0;
+        }
+
+        .record-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .record-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .record-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .record-button.recording {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .waveform-container {
+            margin: 20px 0;
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #waveformCanvas {
+            width: 100%;
+            height: 80px;
+            border-radius: 5px;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #667eea;
+            margin: 15px 0;
+        }
+
+        .status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #feb2b2;
+        }
+
+        .status.processing {
+            background: #bee3f8;
+            color: #2a4365;
+            border: 1px solid #90cdf4;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .result-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .result-text {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 100px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #2d3748;
+        }
+
+        .api-url-section {
+            margin-bottom: 20px;
+        }
+
+        .api-url-section input {
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .test-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .test-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 2px solid #9ae6b4;
+        }
+
+        .test-failed {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 2px solid #feb2b2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 阿里云语音识别API测试</h1>
+        
+        <!-- API配置区域 -->
+        <div class="config-section">
+            <h3>API配置</h3>
+            <div class="api-url-section">
+                <div class="form-group">
+                    <label for="apiUrl">API地址:</label>
+                    <input type="text" id="apiUrl" value="https://aliyun-voice-api.vercel.app/api/recognize" placeholder="输入你的Vercel API地址">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="appKey">AppKey:</label>
+                <input type="text" id="appKey" placeholder="阿里云应用AppKey">
+            </div>
+            <div class="form-group">
+                <label for="accessKeyId">Access Key ID:</label>
+                <input type="text" id="accessKeyId" placeholder="阿里云Access Key ID">
+            </div>
+            <div class="form-group">
+                <label for="accessKeySecret">Access Key Secret:</label>
+                <input type="password" id="accessKeySecret" placeholder="阿里云Access Key Secret">
+            </div>
+        </div>
+
+        <!-- 录音测试区域 -->
+        <div class="record-section">
+            <button id="recordButton" class="record-button">开始录音测试</button>
+            <div class="timer" id="timer">30</div>
+            <div class="waveform-container">
+                <canvas id="waveformCanvas"></canvas>
+            </div>
+            <div id="status" class="status" style="display: none;"></div>
+        </div>
+
+        <!-- 结果显示区域 -->
+        <div class="result-section">
+            <h3>识别结果</h3>
+            <div id="resultText" class="result-text">等待录音识别...</div>
+            <div id="testResult" class="test-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        class VoiceRecognitionTester {
+            constructor() {
+                this.isRecording = false;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.recordingTimer = null;
+                this.timeLeft = 30;
+                this.audioContext = null;
+                this.analyser = null;
+                this.animationId = null;
+                
+                this.initElements();
+                this.bindEvents();
+            }
+
+            initElements() {
+                this.recordButton = document.getElementById('recordButton');
+                this.timer = document.getElementById('timer');
+                this.canvas = document.getElementById('waveformCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.status = document.getElementById('status');
+                this.resultText = document.getElementById('resultText');
+                this.testResult = document.getElementById('testResult');
+                
+                // 配置输入框
+                this.apiUrl = document.getElementById('apiUrl');
+                this.appKey = document.getElementById('appKey');
+                this.accessKeyId = document.getElementById('accessKeyId');
+                this.accessKeySecret = document.getElementById('accessKeySecret');
+                
+                this.setupCanvas();
+            }
+
+            setupCanvas() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width * window.devicePixelRatio;
+                this.canvas.height = rect.height * window.devicePixelRatio;
+                this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            }
+
+            bindEvents() {
+                this.recordButton.addEventListener('click', () => {
+                    if (this.isRecording) {
+                        this.stopRecording();
+                    } else {
+                        this.startRecording();
+                    }
+                });
+            }
+
+            async startRecording() {
+                try {
+                    // 验证配置
+                    if (!this.validateConfig()) {
+                        return;
+                    }
+
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        } 
+                    });
+
+                    this.setupAudioContext(stream);
+                    this.setupMediaRecorder(stream);
+
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    this.timeLeft = 30;
+                    
+                    this.updateUI();
+                    this.startTimer();
+                    this.startWaveformAnimation();
+                    
+                    this.showStatus('开始录音...', 'processing');
+
+                } catch (error) {
+                    console.error('录音启动失败:', error);
+                    this.showStatus('录音启动失败: ' + error.message, 'error');
+                }
+            }
+
+            validateConfig() {
+                if (!this.apiUrl.value.trim()) {
+                    this.showStatus('请输入API地址', 'error');
+                    return false;
+                }
+                if (!this.appKey.value.trim()) {
+                    this.showStatus('请输入AppKey', 'error');
+                    return false;
+                }
+                if (!this.accessKeyId.value.trim()) {
+                    this.showStatus('请输入Access Key ID', 'error');
+                    return false;
+                }
+                if (!this.accessKeySecret.value.trim()) {
+                    this.showStatus('请输入Access Key Secret', 'error');
+                    return false;
+                }
+                return true;
+            }
+
+            setupAudioContext(stream) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioContext.createAnalyser();
+                this.analyser.fftSize = 256;
+                
+                const source = this.audioContext.createMediaStreamSource(stream);
+                source.connect(this.analyser);
+            }
+
+            setupMediaRecorder(stream) {
+                this.audioChunks = [];
+                this.mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm'
+                });
+
+                this.mediaRecorder.ondataavailable = (event) => {
+                    this.audioChunks.push(event.data);
+                };
+
+                this.mediaRecorder.onstop = () => {
+                    this.processRecording();
+                };
+            }
+
+            startTimer() {
+                this.recordingTimer = setInterval(() => {
+                    this.timeLeft--;
+                    this.timer.textContent = this.timeLeft;
+                    
+                    if (this.timeLeft <= 0) {
+                        this.stopRecording();
+                    }
+                }, 1000);
+            }
+
+            startWaveformAnimation() {
+                const draw = () => {
+                    if (!this.isRecording) return;
+
+                    const bufferLength = this.analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    this.analyser.getByteFrequencyData(dataArray);
+
+                    const rect = this.canvas.getBoundingClientRect();
+                    const width = rect.width;
+                    const height = rect.height;
+
+                    this.ctx.fillStyle = '#f7fafc';
+                    this.ctx.fillRect(0, 0, width, height);
+
+                    const barWidth = width / bufferLength * 2.5;
+                    let barHeight;
+                    let x = 0;
+
+                    for (let i = 0; i < bufferLength; i++) {
+                        barHeight = (dataArray[i] / 255) * height * 0.8;
+                        
+                        const gradient = this.ctx.createLinearGradient(0, height - barHeight, 0, height);
+                        gradient.addColorStop(0, '#667eea');
+                        gradient.addColorStop(1, '#764ba2');
+                        
+                        this.ctx.fillStyle = gradient;
+                        this.ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                        
+                        x += barWidth + 1;
+                    }
+
+                    this.animationId = requestAnimationFrame(draw);
+                };
+                
+                draw();
+            }
+
+            stopRecording() {
+                if (!this.isRecording) return;
+
+                this.isRecording = false;
+                this.mediaRecorder.stop();
+                
+                if (this.recordingTimer) {
+                    clearInterval(this.recordingTimer);
+                }
+                
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+
+                // 停止所有音频轨道
+                if (this.mediaRecorder && this.mediaRecorder.stream) {
+                    this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+
+                this.updateUI();
+                this.showStatus('录音结束，正在处理...', 'processing');
+            }
+
+            async processRecording() {
+                try {
+                    const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                    
+                    // 转换为base64
+                    const audioBase64 = await this.blobToBase64(audioBlob);
+                    
+                    // 调用API识别
+                    await this.recognizeAudio(audioBase64);
+                    
+                } catch (error) {
+                    console.error('录音处理失败:', error);
+                    this.showStatus('录音处理失败: ' + error.message, 'error');
+                }
+            }
+
+            async blobToBase64(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        // 移除data:audio/webm;base64,前缀
+                        const base64 = reader.result.split(',')[1];
+                        resolve(base64);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            async recognizeAudio(audioBase64) {
+                try {
+                    this.showStatus('正在调用API进行语音识别...', 'processing');
+                    
+                    const response = await fetch(this.apiUrl.value, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            audioData: audioBase64,
+                            appKey: this.appKey.value,
+                            accessKeyId: this.accessKeyId.value,
+                            accessKeySecret: this.accessKeySecret.value,
+                            maxDuration: 60
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const recognizedText = result.data.text;
+                        this.resultText.textContent = recognizedText;
+                        this.showStatus('识别成功！', 'success');
+                        
+                        // 检查测试结果
+                        this.checkTestResult(recognizedText);
+                        
+                    } else {
+                        this.showStatus('识别失败: ' + result.error, 'error');
+                        this.resultText.textContent = '识别失败: ' + result.error;
+                        this.showTestResult(false, result.error);
+                    }
+                    
+                } catch (error) {
+                    console.error('API调用失败:', error);
+                    this.showStatus('API调用失败: ' + error.message, 'error');
+                    this.resultText.textContent = 'API调用失败: ' + error.message;
+                    this.showTestResult(false, error.message);
+                }
+            }
+
+            checkTestResult(text) {
+                const textLength = text.length;
+                const isSuccess = textLength >= 10;
+                
+                if (isSuccess) {
+                    this.showTestResult(true, `测试成功！识别文本长度: ${textLength} 字符`);
+                } else {
+                    this.showTestResult(false, `测试未完全成功，识别文本长度: ${textLength} 字符 (需要≥10字符)`);
+                }
+            }
+
+            showTestResult(success, message) {
+                this.testResult.style.display = 'block';
+                this.testResult.className = `test-result ${success ? 'test-success' : 'test-failed'}`;
+                this.testResult.textContent = message;
+            }
+
+            updateUI() {
+                if (this.isRecording) {
+                    this.recordButton.textContent = '停止录音';
+                    this.recordButton.classList.add('recording');
+                } else {
+                    this.recordButton.textContent = '开始录音测试';
+                    this.recordButton.classList.remove('recording');
+                    this.timer.textContent = '30';
+                    
+                    // 清空波形图
+                    const rect = this.canvas.getBoundingClientRect();
+                    this.ctx.fillStyle = '#f7fafc';
+                    this.ctx.fillRect(0, 0, rect.width, rect.height);
+                }
+            }
+
+            showStatus(message, type) {
+                this.status.style.display = 'block';
+                this.status.className = `status ${type}`;
+                this.status.textContent = message;
+            }
+        }
+
+        // 初始化测试器
+        document.addEventListener('DOMContentLoaded', () => {
+            new VoiceRecognitionTester();
+        });
+    </script>
+</body>
+</html>
