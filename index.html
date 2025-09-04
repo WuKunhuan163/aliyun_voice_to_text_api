@@ -113,20 +113,61 @@
         }
 
         .waveform-container {
-            margin: 20px 0;
-            background: #f7fafc;
-            border-radius: 10px;
-            padding: 20px;
-            height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%;
+            height: 30px;
+            margin: 10px 0;
+            padding: 0;
+            border-radius: 4px;
+            overflow: hidden;
+            background: transparent;
         }
 
-        #waveformCanvas {
+        .waveform-svg {
+            display: block;
             width: 100%;
-            height: 80px;
-            border-radius: 5px;
+            height: 30px;
+        }
+
+        .waveform-background {
+            fill: #e9ecef;
+            width: 100%;
+            height: 100%;
+        }
+
+        .waveform-bar {
+            fill: #6c757d;
+            transition: height 0.1s ease;
+        }
+
+        .waveform-progress-mask {
+            fill: rgba(108, 117, 125, 0.3);
+            transition: width 0.1s ease;
+        }
+
+        /* 录音时的样式 */
+        .recording .waveform-background {
+            fill: #fff3cd;
+        }
+
+        .recording .waveform-bar {
+            fill: #ffc107;
+        }
+
+        .recording .waveform-progress-mask {
+            fill: rgba(255, 193, 7, 0.3);
+        }
+
+        /* 成功时的样式 */
+        .success .waveform-background {
+            fill: #d4edda !important;
+        }
+
+        .success .waveform-bar {
+            fill: #28a745 !important;
+        }
+
+        .success .waveform-progress-mask {
+            fill: rgba(40, 167, 69, 0.3) !important;
         }
 
         .timer {
@@ -224,8 +265,15 @@
         <div class="record-section">
             <button id="recordButton" class="record-button">开始录音测试</button>
             <div class="timer" id="timer">30</div>
-            <div class="waveform-container">
-                <canvas id="waveformCanvas"></canvas>
+            <div class="waveform-container" id="waveformContainer">
+                <svg class="waveform-svg" id="waveformSvg" width="100%" height="30" viewBox="0 0 1000 30" preserveAspectRatio="none">
+                    <!-- 背景 -->
+                    <rect class="waveform-background" x="0" y="0" width="1000" height="30" />
+                    <!-- 峰值区域将动态生成 -->
+                    <g id="waveformBars"></g>
+                    <!-- 进度遮罩 -->
+                    <rect class="waveform-progress-mask" id="waveformProgressMask" x="0" y="0" width="0" height="30" />
+                </svg>
             </div>
             <div id="status" class="status" style="display: none;"></div>
         </div>
@@ -249,6 +297,14 @@
                 this.analyser = null;
                 this.animationId = null;
                 
+                // 波峰图相关
+                this.waveformData = [];
+                this.maxWaveformBars = 300; // 30秒录音，每0.1秒一个峰值条
+                this.waveformUpdateInterval = 100; // 每100ms更新一次峰值图
+                this.currentAmplitude = 0;
+                this.waveformTimer = null;
+                this.recordingStartTime = 0;
+                
                 this.initElements();
                 this.bindEvents();
             }
@@ -256,10 +312,9 @@
             initElements() {
                 this.recordButton = document.getElementById('recordButton');
                 this.timer = document.getElementById('timer');
-                this.canvas = document.getElementById('waveformCanvas');
-                this.ctx = this.canvas.getContext('2d');
                 this.status = document.getElementById('status');
                 this.resultText = document.getElementById('resultText');
+                this.waveformContainer = document.getElementById('waveformContainer');
                 
                 // 配置输入框
                 this.apiUrl = document.getElementById('apiUrl');
@@ -267,14 +322,19 @@
                 this.accessKeyId = document.getElementById('accessKeyId');
                 this.accessKeySecret = document.getElementById('accessKeySecret');
                 
-                this.setupCanvas();
+                this.initWaveform();
             }
 
-            setupCanvas() {
-                const rect = this.canvas.getBoundingClientRect();
-                this.canvas.width = rect.width * window.devicePixelRatio;
-                this.canvas.height = rect.height * window.devicePixelRatio;
-                this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            initWaveform() {
+                this.waveformData = [];
+                const waveformBars = document.getElementById('waveformBars');
+                if (waveformBars) {
+                    waveformBars.innerHTML = '';
+                }
+                const progressMask = document.getElementById('waveformProgressMask');
+                if (progressMask) {
+                    progressMask.setAttribute('width', '0');
+                }
             }
 
             bindEvents() {
@@ -309,10 +369,11 @@
                     this.mediaRecorder.start();
                     this.isRecording = true;
                     this.timeLeft = 30;
+                    this.recordingStartTime = Date.now();
                     
                     this.updateUI();
                     this.startTimer();
-                    this.startWaveformAnimation();
+                    this.startWaveformTimer();
                     
                     this.showStatus('开始录音...', 'processing');
 
@@ -377,42 +438,84 @@
                 }, 1000);
             }
 
-            startWaveformAnimation() {
-                const draw = () => {
-                    if (!this.isRecording) return;
+            startWaveformTimer() {
+                this.waveformTimer = setInterval(() => {
+                    this.updateWaveformOnTimer();
+                }, this.waveformUpdateInterval);
+            }
 
-                    const bufferLength = this.analyser.frequencyBinCount;
-                    const dataArray = new Uint8Array(bufferLength);
-                    this.analyser.getByteFrequencyData(dataArray);
+            updateWaveformOnTimer() {
+                if (!this.isRecording || !this.analyser) return;
 
-                    const rect = this.canvas.getBoundingClientRect();
-                    const width = rect.width;
-                    const height = rect.height;
+                // 获取当前音频频率数据
+                const bufferLength = this.analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                this.analyser.getByteFrequencyData(dataArray);
 
-                    this.ctx.fillStyle = '#f7fafc';
-                    this.ctx.fillRect(0, 0, width, height);
+                // 计算当前振幅（RMS值）
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i] * dataArray[i];
+                }
+                this.currentAmplitude = Math.sqrt(sum / bufferLength) / 255;
 
-                    const barWidth = width / bufferLength * 2.5;
-                    let barHeight;
-                    let x = 0;
-
-                    for (let i = 0; i < bufferLength; i++) {
-                        barHeight = (dataArray[i] / 255) * height * 0.8;
-                        
-                        const gradient = this.ctx.createLinearGradient(0, height - barHeight, 0, height);
-                        gradient.addColorStop(0, '#667eea');
-                        gradient.addColorStop(1, '#764ba2');
-                        
-                        this.ctx.fillStyle = gradient;
-                        this.ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-                        
-                        x += barWidth + 1;
-                    }
-
-                    this.animationId = requestAnimationFrame(draw);
-                };
+                // 计算峰值高度
+                const height = Math.min(25, Math.max(1, this.currentAmplitude * 150));
                 
-                draw();
+                // 添加到峰图数据
+                this.waveformData.push(height);
+                
+                // 重置当前振幅，准备下一次采样
+                this.currentAmplitude = 0;
+                
+                // 更新SVG显示
+                this.renderWaveform();
+            }
+
+            renderWaveform() {
+                const waveformBars = document.getElementById('waveformBars');
+                if (!waveformBars) return;
+                
+                // 清空现有的峰值条
+                waveformBars.innerHTML = '';
+                
+                // 计算当前录音进度
+                const elapsed = this.isRecording ? (Date.now() - this.recordingStartTime) / 1000 : 30;
+                const totalBarsToShow = Math.min(this.maxWaveformBars, Math.ceil(elapsed * 10)); // 每秒10个峰值条
+                
+                // 计算每个峰值条的宽度
+                const barWidth = 1000 / this.maxWaveformBars; // SVG viewBox宽度为1000
+                
+                // 绘制峰值条（从最新的数据开始，向前显示）
+                const startIndex = Math.max(0, this.waveformData.length - totalBarsToShow);
+                for (let i = 0; i < totalBarsToShow && i < this.waveformData.length; i++) {
+                    const dataIndex = startIndex + i;
+                    if (dataIndex < this.waveformData.length) {
+                        const height = this.waveformData[dataIndex];
+                        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        rect.setAttribute('class', 'waveform-bar');
+                        rect.setAttribute('x', i * barWidth);
+                        rect.setAttribute('y', 30 - height); // 从底部开始
+                        rect.setAttribute('width', barWidth * 0.8); // 留一点间隙
+                        rect.setAttribute('height', height);
+                        waveformBars.appendChild(rect);
+                    }
+                }
+                
+                // 更新进度遮罩
+                this.updateWaveformProgress();
+            }
+
+            updateWaveformProgress() {
+                const progressMask = document.getElementById('waveformProgressMask');
+                if (!progressMask || !this.isRecording) return;
+                
+                // 计算进度百分比
+                const elapsed = Date.now() - this.recordingStartTime;
+                const progress = Math.min(100, (elapsed / (30 * 1000)) * 100);
+                
+                // 更新进度遮罩宽度
+                progressMask.setAttribute('width', (progress / 100) * 1000);
             }
 
             stopRecording() {
@@ -425,8 +528,9 @@
                     clearInterval(this.recordingTimer);
                 }
                 
-                if (this.animationId) {
-                    cancelAnimationFrame(this.animationId);
+                if (this.waveformTimer) {
+                    clearInterval(this.waveformTimer);
+                    this.waveformTimer = null;
                 }
 
                 // 停止所有音频轨道
@@ -512,6 +616,9 @@
                         this.resultText.textContent = recognizedText || '识别结果为空';
                         this.showStatus('识别成功！', 'success');
                         
+                        // 添加成功样式到波形图
+                        this.waveformContainer.classList.add('success');
+                        
                         // 检查测试结果
                         this.checkTestResult(recognizedText);
                         
@@ -543,15 +650,15 @@
                 if (this.isRecording) {
                     this.recordButton.textContent = '停止录音';
                     this.recordButton.classList.add('recording');
+                    this.waveformContainer.classList.add('recording');
                 } else {
                     this.recordButton.textContent = '开始录音测试';
                     this.recordButton.classList.remove('recording');
+                    this.waveformContainer.classList.remove('recording');
                     this.timer.textContent = '30';
                     
-                    // 清空波形图
-                    const rect = this.canvas.getBoundingClientRect();
-                    this.ctx.fillStyle = '#f7fafc';
-                    this.ctx.fillRect(0, 0, rect.width, rect.height);
+                    // 重置波形图
+                    this.initWaveform();
                 }
             }
 
