@@ -122,8 +122,79 @@
             border-color: #48bb78;
         }
 
+        .token-field {
+            margin: 20px 0;
+            padding: 16px;
+            background: #f0f4f8;
+            border-radius: 10px;
+            border-left: 4px solid #4299e1;
+        }
+
+        .token-field label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2d3748;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .token-field input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #e2e8f0;
+            color: #4a5568;
+            font-family: monospace;
+        }
+
+        .token-field input.has-token {
+            background: #c6f6d5;
+            border-color: #48bb78;
+            color: #22543d;
+        }
+
+        .token-status {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .token-status.loading {
+            color: #4299e1;
+        }
+
+        .token-status.success {
+            color: #38a169;
+        }
+
+        .token-status.error {
+            color: #e53e3e;
+        }
+
         .record-section {
             margin: 25px 0;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .download-button {
+            background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .download-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(56, 161, 105, 0.3);
         }
 
         .record-button {
@@ -269,6 +340,12 @@
             border: 1px solid #90cdf4;
         }
 
+        .status.warning {
+            background: #fef5e7;
+            color: #c05621;
+            border: 1px solid #f6ad55;
+        }
+
 
         .api-url-section {
             margin-bottom: 20px;
@@ -279,48 +356,6 @@
             font-size: 13px;
         }
 
-        .api-test-section {
-            margin: 20px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            border: 1px solid #e9ecef;
-        }
-
-        .api-test-section h3 {
-            color: #495057;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .api-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .api-test-btn {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .api-test-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .api-test-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
 
     </style>
 </head>
@@ -346,6 +381,12 @@
                 <label for="accessKeySecret">Access Key Secret:</label>
                 <input type="password" id="accessKeySecret" placeholder="阿里云Access Key Secret">
             </div>
+            
+            <div class="token-field">
+                <label for="tokenField">Token:</label>
+                <input type="text" id="tokenField" placeholder="将在填写密钥后自动获取..." readonly>
+                <div class="token-status" id="tokenStatus"></div>
+            </div>
         </div>
 
         <!-- 转录结果显示区域 -->
@@ -361,18 +402,8 @@
 
         <!-- 录音测试区域 -->
         <div class="record-section">
-            <button id="recordButton" class="record-button">开始录音测试</button>
+            <button id="recordButton" class="record-button" disabled>开始录音测试</button>
             <button id="downloadButton" class="download-button" style="display: none;">下载录音</button>
-            
-            <!-- API测试按钮区域 -->
-            <div class="api-test-section" id="apiTestSection" style="display: none;">
-                <h3>API测试选项</h3>
-                <div class="api-buttons">
-                    <button id="testTokenButton" class="api-test-btn">🔑 测试Token API</button>
-                    <button id="testRecognizeButton" class="api-test-btn">🎤 测试识别API</button>
-                    <button id="testUnifiedButton" class="api-test-btn">🚀 测试统一API</button>
-                </div>
-            </div>
             <!-- 共享容器：进度条和状态/结果 -->
             <div class="shared-container" id="sharedContainer">
                 <div class="waveform-container" id="waveformContainer">
@@ -426,11 +457,9 @@
                 this.accessKeyId = document.getElementById('accessKeyId');
                 this.accessKeySecret = document.getElementById('accessKeySecret');
                 
-                // API测试相关元素
-                this.apiTestSection = document.getElementById('apiTestSection');
-                this.testTokenButton = document.getElementById('testTokenButton');
-                this.testRecognizeButton = document.getElementById('testRecognizeButton');
-                this.testUnifiedButton = document.getElementById('testUnifiedButton');
+                // Token相关元素
+                this.tokenField = document.getElementById('tokenField');
+                this.tokenStatus = document.getElementById('tokenStatus');
                 
                 this.initWaveform();
             }
@@ -460,18 +489,80 @@
                     this.downloadRecording();
                 });
 
-                // API测试按钮事件
-                this.testTokenButton.addEventListener('click', () => {
-                    this.testTokenAPI();
+                // 监听密钥输入，自动获取Token
+                this.accessKeyId.addEventListener('input', () => {
+                    this.checkAndGetToken();
                 });
 
-                this.testRecognizeButton.addEventListener('click', () => {
-                    this.testRecognizeAPI();
+                this.accessKeySecret.addEventListener('input', () => {
+                    this.checkAndGetToken();
                 });
 
-                this.testUnifiedButton.addEventListener('click', () => {
-                    this.testUnifiedAPI();
+                this.appKey.addEventListener('input', () => {
+                    this.checkAndGetToken();
                 });
+            }
+
+            // 检查并自动获取Token
+            async checkAndGetToken() {
+                const appKey = this.appKey.value.trim();
+                const accessKeyId = this.accessKeyId.value.trim();
+                const accessKeySecret = this.accessKeySecret.value.trim();
+
+                if (appKey && accessKeyId && accessKeySecret) {
+                    await this.getTokenAutomatically(appKey, accessKeyId, accessKeySecret);
+                } else {
+                    // 清除Token和状态
+                    this.tokenField.value = '';
+                    this.tokenField.classList.remove('has-token');
+                    this.tokenStatus.textContent = '';
+                    this.tokenStatus.className = 'token-status';
+                    this.recordButton.disabled = true;
+                    this.currentToken = null;
+                }
+            }
+
+            // 自动获取Token
+            async getTokenAutomatically(appKey, accessKeyId, accessKeySecret) {
+                try {
+                    this.tokenStatus.textContent = '正在获取Token...';
+                    this.tokenStatus.className = 'token-status loading';
+                    this.recordButton.disabled = true;
+
+                    const response = await fetch(this.apiUrl.value.replace('/recognize', '/get-token'), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            appKey,
+                            accessKeyId,
+                            accessKeySecret
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.currentToken = result.token;
+                        this.tokenField.value = result.token;
+                        this.tokenField.classList.add('has-token');
+                        this.tokenStatus.textContent = 'Token获取成功';
+                        this.tokenStatus.className = 'token-status success';
+                        this.recordButton.disabled = false;
+                    } else {
+                        throw new Error(result.error);
+                    }
+
+                } catch (error) {
+                    console.error('Token获取失败:', error);
+                    this.tokenField.value = '';
+                    this.tokenField.classList.remove('has-token');
+                    this.tokenStatus.textContent = `获取失败: ${error.message}`;
+                    this.tokenStatus.className = 'token-status error';
+                    this.recordButton.disabled = true;
+                    this.currentToken = null;
+                }
             }
 
             async startRecording() {
@@ -684,9 +775,12 @@
                     // 转换为base64
                     const audioBase64 = await this.blobToBase64(audioBlob);
                     
-                    // 保存录音数据供API测试使用
+                    // 保存录音数据供下载使用
                     this.currentAudioBlob = audioBlob;
                     this.currentAudioBase64 = audioBase64;
+                    
+                    // 立即显示下载按钮
+                    this.downloadButton.style.display = 'block';
                     
                     // 自动调用语音识别
                     await this.recognizeAudio(audioBase64);
@@ -763,9 +857,7 @@
                                 this.transcriptionResult.value = recognizedText;
                                 this.transcriptionResult.classList.add('has-content');
                             }
-                            this.showStatus('识别成功！', 'success');
-                            this.downloadButton.style.display = 'inline-block';
-                            this.checkTestResult(recognizedText);
+                            this.showResultStatus(recognizedText);
                         }, 1000);
                         
                     } else {
@@ -783,14 +875,19 @@
                 }
             }
 
-            checkTestResult(text) {
+            // 根据识别结果显示不同颜色的状态
+            showResultStatus(text) {
                 const textLength = text.length;
-                const isSuccess = textLength >= 10;
                 
-                if (isSuccess) {
-                    this.showStatus(`测试成功！识别文本长度: ${textLength} 字符`, 'success');
+                if (textLength >= 10) {
+                    // 绿色：成功，文字超过10字
+                    this.showStatus(`识别成功！识别了 ${textLength} 个字符`, 'success');
+                } else if (textLength > 0) {
+                    // 黄色：成功但文字较少
+                    this.showStatus(`识别成功，但文字较少：${textLength} 个字符`, 'warning');
                 } else {
-                    this.showStatus(`测试未完全成功，识别文本长度: ${textLength} 字符 (需要≥10字符)`, 'error');
+                    // 红色：识别失败或无内容
+                    this.showStatus('识别成功但无文字内容', 'error');
                 }
             }
 
@@ -849,154 +946,6 @@
                 this.status.textContent = message;
             }
 
-            // 测试Token API
-            async testTokenAPI() {
-                if (!this.validateConfig()) {
-                    return;
-                }
-
-                try {
-                    this.testTokenButton.disabled = true;
-                    this.showStatus('正在测试Token API...', 'processing');
-
-                    const response = await fetch(this.apiUrl.value.replace('/recognize', '/get-token'), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            appKey: this.appKey.value,
-                            accessKeyId: this.accessKeyId.value,
-                            accessKeySecret: this.accessKeySecret.value
-                        })
-                    });
-
-                    const result = await response.json();
-                    console.log('Token API响应:', result);
-
-                    if (result.success) {
-                        this.currentToken = result.token;
-                        this.showStatus(`Token获取成功: ${result.token.substring(0, 16)}...`, 'success');
-                        this.transcriptionResult.value = `Token: ${result.token}\n过期时间: ${result.expireTime}`;
-                        this.transcriptionResult.classList.add('has-content');
-                    } else {
-                        this.showStatus(`Token获取失败: ${result.error}`, 'error');
-                        this.transcriptionResult.value = `错误: ${result.error}`;
-                        this.transcriptionResult.classList.remove('has-content');
-                    }
-
-                } catch (error) {
-                    console.error('Token API测试失败:', error);
-                    this.showStatus(`Token API测试失败: ${error.message}`, 'error');
-                } finally {
-                    this.testTokenButton.disabled = false;
-                }
-            }
-
-            // 测试语音识别API
-            async testRecognizeAPI() {
-                if (!this.validateConfig()) {
-                    return;
-                }
-
-                if (!this.currentAudioBase64) {
-                    this.showStatus('请先录音', 'error');
-                    return;
-                }
-
-                if (!this.currentToken) {
-                    this.showStatus('请先获取Token', 'error');
-                    return;
-                }
-
-                try {
-                    this.testRecognizeButton.disabled = true;
-                    this.showStatus('正在测试语音识别API...', 'processing');
-
-                    const response = await fetch(this.apiUrl.value.replace('/recognize', '/recognize-audio'), {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            audioData: this.currentAudioBase64,
-                            appKey: this.appKey.value,
-                            token: this.currentToken,
-                            format: 'pcm',
-                            sampleRate: 16000
-                        })
-                    });
-
-                    const result = await response.json();
-                    console.log('识别API响应:', result);
-
-                    if (result.success) {
-                        this.showStatus('语音识别成功!', 'success');
-                        this.transcriptionResult.value = result.result;
-                        this.transcriptionResult.classList.add('has-content');
-                    } else {
-                        this.showStatus(`语音识别失败: ${result.error}`, 'error');
-                        this.transcriptionResult.value = `错误: ${result.error}`;
-                        this.transcriptionResult.classList.remove('has-content');
-                    }
-
-                } catch (error) {
-                    console.error('语音识别API测试失败:', error);
-                    this.showStatus(`语音识别API测试失败: ${error.message}`, 'error');
-                } finally {
-                    this.testRecognizeButton.disabled = false;
-                }
-            }
-
-            // 测试统一API (原有的完整流程)
-            async testUnifiedAPI() {
-                if (!this.validateConfig()) {
-                    return;
-                }
-
-                if (!this.currentAudioBase64) {
-                    this.showStatus('请先录音', 'error');
-                    return;
-                }
-
-                try {
-                    this.testUnifiedButton.disabled = true;
-                    this.showStatus('正在测试统一API...', 'processing');
-
-                    const response = await fetch(this.apiUrl.value, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            audioData: this.currentAudioBase64,
-                            appKey: this.appKey.value,
-                            accessKeyId: this.accessKeyId.value,
-                            accessKeySecret: this.accessKeySecret.value,
-                            maxDuration: 60
-                        })
-                    });
-
-                    const result = await response.json();
-                    console.log('统一API响应:', result);
-
-                    if (result.success) {
-                        this.showStatus('统一API测试成功!', 'success');
-                        this.transcriptionResult.value = `识别结果: ${result.data.text}\n置信度: ${result.data.confidence}\n时长: ${result.data.duration}s`;
-                        this.transcriptionResult.classList.add('has-content');
-                    } else {
-                        this.showStatus(`统一API测试失败: ${result.error}`, 'error');
-                        this.transcriptionResult.value = `错误: ${result.error}`;
-                        this.transcriptionResult.classList.remove('has-content');
-                    }
-
-                } catch (error) {
-                    console.error('统一API测试失败:', error);
-                    this.showStatus(`统一API测试失败: ${error.message}`, 'error');
-                } finally {
-                    this.testUnifiedButton.disabled = false;
-                }
-            }
         }
 
         // 初始化测试器
