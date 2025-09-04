@@ -94,29 +94,36 @@ async function getAliyunToken(accessKeyId, accessKeySecret) {
 }
 
 /**
- * 语音识别函数 - 使用阿里云实时语音识别API
+ * 语音识别函数 - 按照原来成功的方式实现
  */
-async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
+async function recognizeAudio(audioData, appKey, token, maxDuration = 60) {
   try {
-    console.log(`开始实时语音识别，音频大小: ${audioBuffer.length} bytes`);
+    console.log(`🎤 开始语音识别，音频数据长度: ${audioData.length}`);
+    console.log(`🔑 使用Token: ${token.substring(0, 16)}...`);
+    console.log(`🔐 使用AppKey: ${appKey}`);
     
-    // 阿里云一句话识别API端点（更兼容免费试用）
-    const recognitionUrl = 'https://nls-gateway-cn-shanghai.aliyuncs.com/stream/v1/asr';
+    // 使用原来成功的阿里云NLS API端点
+    const nlsUrl = 'https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr';
     
-    // 构建请求参数
+    // 构建请求参数（按照原来成功的方式）
     const params = new URLSearchParams({
       appkey: appKey,
       token: token,
-      format: 'wav', // 一句话识别支持WAV格式
+      format: 'pcm',
       sample_rate: '16000',
       enable_punctuation_prediction: 'true',
       enable_inverse_text_normalization: 'true'
     });
     
-    console.log('发送语音识别请求到阿里云（一句话识别）...');
+    const requestUrl = `${nlsUrl}?${params}`;
+    console.log('🔗 调用阿里云NLS API:', requestUrl.substring(0, 100) + '...');
     
-    // 发送POST请求到阿里云一句话识别API
-    const response = await fetch(`${recognitionUrl}?${params.toString()}`, {
+    // 将音频数据转换为Buffer（按照原来的方式）
+    const audioBuffer = Buffer.from(audioData);
+    console.log('📊 发送音频数据大小:', audioBuffer.length, 'bytes');
+    
+    // 发送POST请求到阿里云NLS API
+    const response = await fetch(requestUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/octet-stream',
@@ -125,44 +132,34 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
       body: audioBuffer
     });
     
+    console.log('📡 阿里云API响应状态:', response.status);
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('阿里云语音识别API响应错误:', response.status, errorText);
-      throw new Error(`阿里云语音识别API调用失败: ${response.status} ${errorText}`);
+      console.error('❌ 阿里云API错误响应:', errorText);
+      throw new Error(`阿里云API错误: ${response.status} - ${errorText}`);
     }
     
-    const result = await response.json();
-    console.log('阿里云语音识别API响应:', result);
+    const responseText = await response.text();
+    console.log('📄 阿里云API原始响应:', responseText);
     
-    // 处理阿里云实时识别API响应
-    if (result.flash_result && result.flash_result.sentences) {
-      // 合并所有句子的识别结果
-      const sentences = result.flash_result.sentences;
-      const fullText = sentences.map(sentence => sentence.text).join('');
-      const avgConfidence = sentences.reduce((sum, sentence) => sum + (sentence.confidence || 0), 0) / sentences.length;
-      
-      console.log(`实时识别成功，识别出 ${sentences.length} 个句子`);
-      
+    // 解析响应
+    const result = JSON.parse(responseText);
+    
+    if (result.status === 20000000) {
+      // 识别成功
+      console.log('✅ 识别结果:', result.result);
       return {
         success: true,
-        text: fullText || '识别结果为空',
-        confidence: avgConfidence || 0.9,
-        duration: Math.min(audioBuffer.length / 16000, maxDuration),
-        sentences: sentences.length
-      };
-    } else if (result.status === 20000000) {
-      // 兼容一句话识别格式
-      return {
-        success: true,
-        text: result.result || '识别结果为空',
-        confidence: result.confidence || 0.9,
+        text: result.result,
+        confidence: 0.9,
         duration: Math.min(audioBuffer.length / 16000, maxDuration)
       };
     } else {
-      console.error('语音识别失败:', result);
+      // 识别失败，友好错误处理
+      console.error('❌ 阿里云识别失败:', result);
       
-      // 友好的错误信息处理
-      let friendlyError = result.message || `语音识别失败，状态码: ${result.status}`;
+      let friendlyError = result.message || '未知错误';
       
       if (result.status === 40000010 || friendlyError.includes('FREE_TRIAL_EXPIRED')) {
         friendlyError = '免费试用已过期，请检查阿里云控制台的试用状态或升级到付费版本';
@@ -181,10 +178,19 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
     }
     
   } catch (error) {
-    console.error('语音识别异常:', error);
+    console.error('❌ 调用阿里云NLS失败:', error);
+    
+    // 如果是网络错误，返回更详细的信息
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      return {
+        success: false,
+        error: '网络连接失败，请检查网络连接'
+      };
+    }
+    
     return {
       success: false,
-      error: `语音识别异常: ${error.message}`
+      error: error.message
     };
   }
 }
@@ -242,7 +248,7 @@ export default async function handler(req, res) {
 
     console.log('访问令牌获取成功，开始语音识别...');
 
-    // 将base64音频数据转换为Buffer，添加大小检查
+    // 添加音频数据大小检查
     if (audioData.length > 10 * 1024 * 1024) { // 10MB限制
       return res.status(413).json({
         success: false,
@@ -250,21 +256,11 @@ export default async function handler(req, res) {
       });
     }
     
-    let audioBuffer;
-    try {
-      audioBuffer = Buffer.from(audioData, 'base64');
-      console.log(`音频Buffer创建成功，大小: ${audioBuffer.length} bytes`);
-    } catch (bufferError) {
-      console.error('Buffer创建失败:', bufferError);
-      return res.status(400).json({
-        success: false,
-        error: '音频数据格式错误'
-      });
-    }
+    console.log(`音频数据大小: ${audioData.length} 字符 (base64)`);
     
-    // 执行语音识别
+    // 执行语音识别（按照原来成功的方式传递参数）
     const recognitionResult = await recognizeAudio(
-      audioBuffer, 
+      audioData, // 直接传递base64数据，让recognizeAudio函数内部处理
       appKey, 
       tokenResult.token, 
       maxDuration
