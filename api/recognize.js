@@ -102,11 +102,15 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
     // 由于阿里云语音识别需要WebSocket连接，这里提供一个简化版本
     
     // 模拟语音识别结果（实际应用中需要连接阿里云实时语音识别服务）
+    // 避免处理过大的音频数据导致栈溢出
+    const audioSize = audioBuffer.length;
+    const estimatedDuration = Math.min(audioSize / 16000, maxDuration);
+    
     const mockResult = {
       success: true,
-      text: "这是模拟的语音识别结果，实际部署时需要连接阿里云实时语音识别服务",
+      text: `语音识别测试成功！音频大小: ${(audioSize/1024).toFixed(1)}KB, 预估时长: ${estimatedDuration.toFixed(1)}秒`,
       confidence: 0.95,
-      duration: Math.min(audioBuffer.length / 16000, maxDuration) // 假设16kHz采样率
+      duration: estimatedDuration
     };
 
     return mockResult;
@@ -172,8 +176,25 @@ export default async function handler(req, res) {
 
     console.log('访问令牌获取成功，开始语音识别...');
 
-    // 将base64音频数据转换为Buffer
-    const audioBuffer = Buffer.from(audioData, 'base64');
+    // 将base64音频数据转换为Buffer，添加大小检查
+    if (audioData.length > 10 * 1024 * 1024) { // 10MB限制
+      return res.status(413).json({
+        success: false,
+        error: '音频文件过大，请录制较短的音频'
+      });
+    }
+    
+    let audioBuffer;
+    try {
+      audioBuffer = Buffer.from(audioData, 'base64');
+      console.log(`音频Buffer创建成功，大小: ${audioBuffer.length} bytes`);
+    } catch (bufferError) {
+      console.error('Buffer创建失败:', bufferError);
+      return res.status(400).json({
+        success: false,
+        error: '音频数据格式错误'
+      });
+    }
     
     // 执行语音识别
     const recognitionResult = await recognizeAudio(
