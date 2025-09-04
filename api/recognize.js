@@ -22,7 +22,7 @@ function generateSignature(accessKeySecret, stringToSign) {
  * 创建阿里云API请求参数
  */
 function createRequestParams(accessKeyId, accessKeySecret) {
-  const timestamp = new Date().toISOString();
+  const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
   const nonce = crypto.randomBytes(16).toString('hex');
   
   const params = {
@@ -50,7 +50,7 @@ function createRequestParams(accessKeyId, accessKeySecret) {
   const stringToSign = `POST&${encodeURIComponent('/')}&${encodeURIComponent(canonicalizedQueryString)}`;
   
   // 生成签名
-  const signature = generateSignature(accessKeySecret, stringToSign);
+  const signature = generateSignature(accessKeySecret + '&', stringToSign);
   sortedParams['Signature'] = signature;
 
   return sortedParams;
