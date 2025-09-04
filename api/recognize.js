@@ -100,25 +100,22 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
   try {
     console.log(`开始实时语音识别，音频大小: ${audioBuffer.length} bytes`);
     
-    // 阿里云实时语音识别API端点
-    const recognitionUrl = 'https://nls-gateway-cn-shanghai.aliyuncs.com/stream/v1/FlashRecognizer';
+    // 阿里云一句话识别API端点（更兼容免费试用）
+    const recognitionUrl = 'https://nls-gateway-cn-shanghai.aliyuncs.com/stream/v1/asr';
     
     // 构建请求参数
     const params = new URLSearchParams({
       appkey: appKey,
       token: token,
-      format: 'pcm', // 实时识别通常使用PCM格式
+      format: 'wav', // 一句话识别支持WAV格式
       sample_rate: '16000',
       enable_punctuation_prediction: 'true',
-      enable_inverse_text_normalization: 'true',
-      enable_voice_detection: 'false', // 关闭静音检测，处理完整音频
-      max_end_silence: '800', // 最大结束静音时间
-      max_start_silence: '10000' // 最大开始静音时间
+      enable_inverse_text_normalization: 'true'
     });
     
-    console.log('发送实时语音识别请求到阿里云...');
+    console.log('发送语音识别请求到阿里云（一句话识别）...');
     
-    // 发送POST请求到阿里云实时语音识别API
+    // 发送POST请求到阿里云一句话识别API
     const response = await fetch(`${recognitionUrl}?${params.toString()}`, {
       method: 'POST',
       headers: {
@@ -130,12 +127,12 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('阿里云实时识别API响应错误:', response.status, errorText);
-      throw new Error(`阿里云实时识别API调用失败: ${response.status} ${errorText}`);
+      console.error('阿里云语音识别API响应错误:', response.status, errorText);
+      throw new Error(`阿里云语音识别API调用失败: ${response.status} ${errorText}`);
     }
     
     const result = await response.json();
-    console.log('阿里云实时识别API响应:', result);
+    console.log('阿里云语音识别API响应:', result);
     
     // 处理阿里云实时识别API响应
     if (result.flash_result && result.flash_result.sentences) {
@@ -162,18 +159,32 @@ async function recognizeAudio(audioBuffer, appKey, token, maxDuration = 60) {
         duration: Math.min(audioBuffer.length / 16000, maxDuration)
       };
     } else {
-      console.error('实时语音识别失败:', result);
+      console.error('语音识别失败:', result);
+      
+      // 友好的错误信息处理
+      let friendlyError = result.message || `语音识别失败，状态码: ${result.status}`;
+      
+      if (result.status === 40000010 || friendlyError.includes('FREE_TRIAL_EXPIRED')) {
+        friendlyError = '免费试用已过期，请检查阿里云控制台的试用状态或升级到付费版本';
+      } else if (result.status === 40000001) {
+        friendlyError = 'AppKey无效，请检查应用密钥配置';
+      } else if (result.status === 40000002) {
+        friendlyError = '访问令牌无效，请重新验证AccessKey配置';
+      } else if (result.status === 40000011) {
+        friendlyError = '音频格式不支持，请检查录音设置';
+      }
+      
       return {
         success: false,
-        error: result.message || `实时识别失败，状态码: ${result.status}`
+        error: friendlyError
       };
     }
     
   } catch (error) {
-    console.error('实时语音识别异常:', error);
+    console.error('语音识别异常:', error);
     return {
       success: false,
-      error: `实时语音识别异常: ${error.message}`
+      error: `语音识别异常: ${error.message}`
     };
   }
 }
