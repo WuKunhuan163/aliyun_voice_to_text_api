@@ -1,12 +1,4 @@
 {
-  "version": 2,
-  "buildCommand": "npm install",
-  "installCommand": "npm install",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@3.0.0"
-    }
-  },
   "headers": [
     {
       "source": "/api/(.*)",
