@@ -71,15 +71,21 @@ h1 {
     margin: 0;
 }
 
-.form-group input {
+/* 表单字段通用样式 */
+.form-group input,
+.form-group .readonly-field {
     flex: 1;
     padding: 12px;
     border: 2px solid #e2e8f0;
     border-radius: 8px;
     font-size: 14px;
-    transition: border-color 0.3s;
     box-sizing: border-box; /* 确保padding包含在宽度内 */
     max-width: 100%; /* 确保不超出容器 */
+}
+
+/* input特定样式 */
+.form-group input {
+    transition: border-color 0.3s;
 }
 
 .form-group input:focus {
@@ -87,14 +93,9 @@ h1 {
     border-color: #667eea;
 }
 
-/* 只读字段统一样式 */
-.readonly-field {
-    flex: 1;
-    padding: 12px;
+/* readonly-field特定样式 */
+.form-group .readonly-field {
     background: #f8f9fa;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 14px;
     color: #495057;
     font-family: monospace;
     display: block;
@@ -102,8 +103,6 @@ h1 {
     line-height: 20px;
     word-wrap: break-word; /* 防止长文本溢出 */
     overflow-wrap: break-word; /* 现代浏览器支持 */
-    max-width: 100%; /* 确保不超出容器 */
-    box-sizing: border-box; /* 确保padding包含在宽度内 */
 }
 
 .readonly-field.has-token {
