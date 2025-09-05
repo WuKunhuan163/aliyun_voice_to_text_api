@@ -111,14 +111,14 @@ class VoiceRecognitionTester {
             this.transcriptionResult.innerHTML = '步骤2: 请填写AccessKey ID。前往<a href="https://ram.console.aliyun.com/users" target="_blank">RAM用户管理页面</a>创建AccessKey';
             this.transcriptionResult.className = "transcription-textarea";
         } else if (!accessKeySecret) {
-            this.transcriptionResult.innerHTML = '步骤3: 请填写AccessKey Secret。在RAM用户管理页面创建AccessKey Secret';
+            this.transcriptionResult.innerHTML = '步骤3: 请填写AccessKey Secret。在相同的<a href="https://ram.console.aliyun.com/users" target="_blank">RAM用户管理页面</a>创建AccessKey Secret';
             this.transcriptionResult.className = "transcription-textarea";
         } else if (!this.currentToken) {
             this.transcriptionResult.innerHTML = '正在获取Token，请稍候...';
             this.transcriptionResult.className = "transcription-textarea processing";
         } else {
-            this.transcriptionResult.innerHTML = "";
-            this.transcriptionResult.className = "transcription-textarea";
+            this.transcriptionResult.innerHTML = '✅ 配置完成！点击"开始录音测试"按钮开始语音识别';
+            this.transcriptionResult.className = "transcription-textarea success";
         }
     }
 

@@ -7,7 +7,7 @@ const { RPCClient } = require('@alicloud/pop-core');
 async function getAliyunToken(accessKeyId, accessKeySecret) {
     try {
         console.log('🔑 创建阿里云客户端...');
-        console.log('   AccessKey ID:', accessKeyId.substring(0, 8) + '...');
+        console.log('   AccessKey ID:', accessKeyId ? accessKeyId.substring(0, 8) + '...' : 'undefined');
         
         // 使用HTTPS端点 - 与local_server版本一致
         const client = new RPCClient({
@@ -25,7 +25,7 @@ async function getAliyunToken(accessKeyId, accessKeySecret) {
         });
         
         console.log('✅ Token获取成功:');
-        console.log('   Token ID:', result.Token.Id.substring(0, 16) + '...');
+        console.log('   Token ID:', result.Token.Id ? result.Token.Id.substring(0, 16) + '...' : 'undefined');
         console.log('   过期时间:', new Date(result.Token.ExpireTime * 1000).toLocaleString());
         
         return {
@@ -54,9 +54,9 @@ async function callAliyunNLS(requestData) {
     const { token, audioData, format = 'pcm', sampleRate = 16000, appKey } = requestData;
     
     try {
-        console.log('🎤 音频数据长度:', audioData.length);
-        console.log('🔑 使用Token:', token.substring(0, 16) + '...');
-        console.log('🔐 使用AppKey:', appKey);
+        console.log('🎤 音频数据长度:', audioData ? audioData.length : 'undefined');
+        console.log('🔑 使用Token:', token ? token.substring(0, 16) + '...' : 'undefined');
+        console.log('🔐 使用AppKey:', appKey || 'undefined');
         
         // 构建请求URL - 与local_server版本完全相同
         const nlsUrl = 'https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr';
@@ -244,7 +244,7 @@ export default async function handler(req, res) {
             console.log('✅ 访问令牌获取成功');
         }
 
-        console.log('🔑 使用Token:', finalToken.substring(0, 16) + '...');
+        console.log('🔑 使用Token:', finalToken ? finalToken.substring(0, 16) + '...' : 'undefined');
         
         // 调用语音识别 - 与local_server版本完全相同的参数
         const recognitionResult = await callAliyunNLS({
