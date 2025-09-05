@@ -13,8 +13,8 @@
         <!-- API配置区域 -->
         <div class="config-section">
             <div class="form-group">
-                <label>API地址:</label>
-                <span>https://aliyun-voice-to-text-api.vercel.app/api/recognize</span>
+                <label for="apiUrl">API地址:</label>
+                <span class="readonly-field">https://aliyun-voice-to-text-api.vercel.app/api/recognize</span>
             </div>
             
             <div class="form-group">
@@ -30,9 +30,9 @@
                 <input type="password" id="accessKeySecret" placeholder="阿里云Access Key Secret">
             </div>
             
-            <div class="token-field">
+            <div class="form-group">
                 <label for="tokenField">Token:</label>
-                <input type="text" id="tokenField" placeholder="将在填写密钥后自动获取..." readonly>
+                <span id="tokenField" class="readonly-field">将在填写密钥后自动获取...</span>
             </div>
         </div>
 
@@ -48,9 +48,6 @@
                       placeholder="录音完成后，语音识别结果将显示在这里..." 
                       readonly></textarea>
         </div>
-
-        <!-- 状态显示区域 -->
-        <div class="status" id="status" style="display: none;"></div>
 
         <!-- 录音测试区域 -->
         <div class="record-section">

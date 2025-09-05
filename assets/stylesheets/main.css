@@ -23,6 +23,7 @@ body {
     padding: 40px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     max-width: 600px;
+    overflow-x: scroll;
     width: 90%;
     text-align: center;
 }
@@ -83,7 +84,8 @@ h1 {
     border-color: #667eea;
 }
 
-.form-group span {
+/* 只读字段统一样式 */
+.readonly-field {
     flex: 1;
     padding: 12px;
     background: #f8f9fa;
@@ -92,42 +94,15 @@ h1 {
     font-size: 14px;
     color: #495057;
     font-family: monospace;
+    display: block;
 }
 
-/* Token字段 */
-.token-field {
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.token-field label {
-    min-width: 140px;
-    color: #4a5568;
-    font-weight: 500;
-    font-size: 14px;
-    text-align: left;
-    margin: 0;
-}
-
-.token-field input {
-    flex: 1;
-    padding: 12px;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 13px;
-    background: #f8f9fa;
-    color: #495057;
-    font-family: monospace;
-    transition: border-color 0.3s;
-}
-
-.token-field input.has-token {
+.readonly-field.has-token {
     background: #c6f6d5;
     border-color: #48bb78;
     color: #22543d;
 }
+
 
 /* 转录区域 */
 .transcription-section {
