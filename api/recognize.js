@@ -55,6 +55,9 @@ async function callAliyunNLS(requestData) {
     
     try {
         console.log('🎤 音频数据长度:', audioData ? audioData.length : 'undefined');
+        console.log('🔍 音频数据类型:', typeof audioData);
+        console.log('🔍 音频数据是否为数组:', Array.isArray(audioData));
+        console.log('🔍 音频数据前5个元素:', audioData ? audioData.slice(0, 5) : 'undefined');
         console.log('🔑 使用Token:', token ? token.substring(0, 16) + '...' : 'undefined');
         console.log('🔐 使用AppKey:', appKey || 'undefined');
         
@@ -216,6 +219,11 @@ export default async function handler(req, res) {
 
         console.log(`✅ 音频数据验证通过: ${audioData.length} bytes (数组)`);
         console.log('🎤 音频数据长度:', audioData.length);
+        console.log('🔍 详细音频数据信息:');
+        console.log('   类型:', typeof audioData);
+        console.log('   是否为数组:', Array.isArray(audioData));
+        console.log('   前10个元素:', audioData.slice(0, 10));
+        console.log('   构造函数:', audioData.constructor.name);
         
         let finalToken = token;
         
