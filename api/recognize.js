@@ -8,14 +8,12 @@ async function getAliyunToken(appKey, accessKeyId, accessKeySecret) {
     const client = new RPCClient({
         accessKeyId: accessKeyId,
         accessKeySecret: accessKeySecret,
-        endpoint: 'https://nls-meta.cn-shanghai.aliyuncs.com',
+        endpoint: 'http://nls-meta.cn-shanghai.aliyuncs.com',
         apiVersion: '2019-02-28'
     });
 
     try {
-        const result = await client.request('CreateToken', {}, {
-            method: 'POST'
-        });
+        const result = await client.request('CreateToken');
 
         if (result && result.Token && result.Token.Id) {
             return {
