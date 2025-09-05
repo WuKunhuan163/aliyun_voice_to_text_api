@@ -395,8 +395,9 @@ class VoiceRecognitionTester {
             
             this.showStatus('正在调用API进行语音识别...', 'processing');
             
+            // 与local_server版本完全一致的请求体格式
             const requestBody = {
-                audioData: audioByteArray, // 发送字节数组而不是base64
+                audioData: audioByteArray, // 发送字节数组
                 appKey: this.appKey.value,
                 accessKeyId: this.accessKeyId.value,
                 accessKeySecret: this.accessKeySecret.value,
@@ -424,7 +425,8 @@ class VoiceRecognitionTester {
             console.log('📥 完整响应:', result);
             
             if (result.success) {
-                const recognizedText = result.data ? result.data.text : '';
+                // 与local_server版本一致，直接使用result字段
+                const recognizedText = result.result || '';
                 console.log('✅ 识别成功！文本内容:', `"${recognizedText}"`);
                 console.log('📝 文本长度:', recognizedText.length);
                 
