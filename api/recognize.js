@@ -8,12 +8,14 @@ async function getAliyunToken(appKey, accessKeyId, accessKeySecret) {
     const client = new RPCClient({
         accessKeyId: accessKeyId,
         accessKeySecret: accessKeySecret,
-        endpoint: 'http://nls-meta.cn-shanghai.aliyuncs.com',
+        endpoint: 'https://nls-meta.cn-shanghai.aliyuncs.com',
         apiVersion: '2019-02-28'
     });
 
     try {
-        const result = await client.request('CreateToken');
+        const result = await client.request('CreateToken', {}, {
+            method: 'POST'
+        });
 
         if (result && result.Token && result.Token.Id) {
             return {
@@ -67,7 +69,6 @@ async function recognizeAudio(audioData, appKey, token, format = 'pcm', sampleRa
         }
         
         console.log('📊 发送音频数据大小:', audioBuffer.length, 'bytes');
-        console.log('📊 音频Buffer前20字节:', Array.from(audioBuffer.slice(0, 20)));
         
         // 发送POST请求到阿里云NLS API
         const response = await fetch(requestUrl, {
@@ -183,7 +184,6 @@ export default async function handler(req, res) {
 
         console.log('访问令牌获取成功，开始语音识别...');
         console.log(`音频数据大小: ${audioData.length} 字符 (base64)`);
-        console.log('音频数据前100个字符:', audioData.substring(0, 100));
         
         // 执行语音识别
         const recognitionResult = await recognizeAudio(
@@ -195,11 +195,13 @@ export default async function handler(req, res) {
         );
 
         if (recognitionResult.success) {
-            console.log('语音识别成功，识别结果:', recognitionResult.result);
+            console.log('语音识别成功');
             return res.json({
                 success: true,
                 data: {
                     text: recognitionResult.result,
+                    confidence: 0.95, // 阿里云不返回置信度，使用固定值
+                    duration: maxDuration,
                     tokenExpireTime: tokenResult.expireTime
                 }
             });
