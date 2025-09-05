@@ -26,7 +26,6 @@ class VoiceRecognitionTester {
     initElements() {
         this.recordButton = document.getElementById('recordButton');
         this.downloadButton = document.getElementById('downloadButton');
-        this.status = document.getElementById('status');
         this.transcriptionResult = document.getElementById('transcriptionResult');
         
         // 新的进度条和波形图元素
@@ -455,7 +454,6 @@ class VoiceRecognitionTester {
             // 重置所有显示
             this.transcriptionResult.value = '';
             this.transcriptionResult.classList.remove('has-content');
-            this.status.style.display = 'none';
             this.downloadButton.style.display = 'none';
             
             // 重置进度条
@@ -468,11 +466,6 @@ class VoiceRecognitionTester {
         // 使用转录框显示状态信息
         this.transcriptionResult.value = message;
         this.transcriptionResult.className = `transcription-textarea ${type}`;
-        
-        // 同时更新独立的状态区域（如果需要的话）
-        this.status.style.display = 'block';
-        this.status.className = `status ${type}`;
-        this.status.textContent = message;
     }
 }
 
