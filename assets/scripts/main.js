@@ -105,20 +105,19 @@ class VoiceRecognitionTester {
 
         // 在转录框中显示动态配置指导
         if (!appKey) {
-            this.transcriptionResult.value = "步骤1: 请填写AppKey\n\n前往阿里云NLS控制台创建项目获取AppKey:\nhttps://nls-portal.console.aliyun.com/applist";
+            this.transcriptionResult.innerHTML = '步骤1: 请填写AppKey。前往<a href="https://nls-portal.console.aliyun.com/applist" target="_blank">阿里云NLS控制台</a>创建项目获取AppKey';
             this.transcriptionResult.className = "transcription-textarea";
         } else if (!accessKeyId) {
-            this.transcriptionResult.value = "步骤2: 请填写AccessKey ID\n\n前往RAM用户管理页面创建AccessKey:\nhttps://ram.console.aliyun.com/users";
+            this.transcriptionResult.innerHTML = '步骤2: 请填写AccessKey ID。前往<a href="https://ram.console.aliyun.com/users" target="_blank">RAM用户管理页面</a>创建AccessKey';
             this.transcriptionResult.className = "transcription-textarea";
         } else if (!accessKeySecret) {
-            this.transcriptionResult.value = "步骤3: 请填写AccessKey Secret\n\n在RAM用户管理页面创建AccessKey Secret";
+            this.transcriptionResult.innerHTML = '步骤3: 请填写AccessKey Secret。在RAM用户管理页面创建AccessKey Secret';
             this.transcriptionResult.className = "transcription-textarea";
         } else if (!this.currentToken) {
-            this.transcriptionResult.value = "正在获取Token，请稍候...";
+            this.transcriptionResult.innerHTML = '正在获取Token，请稍候...';
             this.transcriptionResult.className = "transcription-textarea processing";
         } else {
-            this.transcriptionResult.value = "";
-            this.transcriptionResult.placeholder = "录音完成后，语音识别结果将显示在这里...";
+            this.transcriptionResult.innerHTML = "";
             this.transcriptionResult.className = "transcription-textarea";
         }
     }
@@ -209,7 +208,7 @@ class VoiceRecognitionTester {
             // 显示进度条和更改文本框内容
             this.transcriptionProgress.style.display = 'block';
             this.transcriptionResult.classList.add('recording');
-            this.transcriptionResult.placeholder = '录音识别中...';
+            this.transcriptionResult.setAttribute('data-placeholder', '录音识别中...');
             
             this.updateUI();
             this.startTimer();
@@ -324,7 +323,7 @@ class VoiceRecognitionTester {
         // 隐藏进度条并恢复文本框
         this.transcriptionProgress.style.display = 'none';
         this.transcriptionResult.classList.remove('recording');
-        this.transcriptionResult.placeholder = '录音完成后，语音识别结果将显示在这里...';
+        this.transcriptionResult.setAttribute('data-placeholder', '录音完成后，语音识别结果将显示在这里...');
 
         this.updateUI();
         this.showStatus('录音结束，正在处理...', 'processing');
@@ -419,7 +418,7 @@ class VoiceRecognitionTester {
                 // 延迟清除进度条并显示结果
                 setTimeout(() => {
                     if (recognizedText) {
-                        this.transcriptionResult.value = recognizedText;
+                        this.transcriptionResult.textContent = recognizedText;
                         this.transcriptionResult.classList.add('has-content');
                     }
                     this.showResultStatus(recognizedText);
@@ -428,14 +427,14 @@ class VoiceRecognitionTester {
             } else {
                 console.error('❌ 识别失败:', result.error);
                 this.showStatus('识别失败: ' + result.error, 'error');
-                this.transcriptionResult.value = '识别失败: ' + result.error;
+                this.transcriptionResult.textContent = '识别失败: ' + result.error;
                 this.transcriptionResult.classList.remove('has-content');
             }
             
         } catch (error) {
             console.error('❌ API调用异常:', error);
             this.showStatus('API调用失败: ' + error.message, 'error');
-            this.transcriptionResult.value = 'API调用失败: ' + error.message;
+            this.transcriptionResult.textContent = 'API调用失败: ' + error.message;
             this.transcriptionResult.classList.remove('has-content');
         }
     }
@@ -446,17 +445,17 @@ class VoiceRecognitionTester {
         
         if (textLength >= 10) {
             // 绿色：成功，文字超过10字
-            this.transcriptionResult.value = `录音结果：${text}`;
+            this.transcriptionResult.textContent = `录音结果：${text}`;
             this.transcriptionResult.className = 'transcription-textarea success has-content';
             this.showStatus(`识别成功！识别了 ${textLength} 个字符`, 'success');
         } else if (textLength > 0) {
             // 黄色：成功但文字较少
-            this.transcriptionResult.value = `录音结果：${text}`;
+            this.transcriptionResult.textContent = `录音结果：${text}`;
             this.transcriptionResult.className = 'transcription-textarea warning has-content';
             this.showStatus(`识别成功，但文字较少：${textLength} 个字符`, 'warning');
         } else {
             // 红色：识别失败或无内容
-            this.transcriptionResult.value = '识别成功但无文字内容';
+            this.transcriptionResult.textContent = '识别成功但无文字内容';
             this.transcriptionResult.className = 'transcription-textarea error';
             this.showStatus('识别成功但无文字内容', 'error');
         }
@@ -490,7 +489,7 @@ class VoiceRecognitionTester {
             this.recordButton.classList.remove('recording');
             
             // 重置所有显示
-            this.transcriptionResult.value = '';
+            this.transcriptionResult.textContent = '';
             this.transcriptionResult.classList.remove('has-content');
             this.downloadButton.style.display = 'none';
             
@@ -502,7 +501,7 @@ class VoiceRecognitionTester {
 
     showStatus(message, type) {
         // 使用转录框显示状态信息
-        this.transcriptionResult.value = message;
+        this.transcriptionResult.textContent = message;
         this.transcriptionResult.className = `transcription-textarea ${type}`;
     }
 }
