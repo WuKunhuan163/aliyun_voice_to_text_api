@@ -106,46 +106,43 @@ h1 {
     color: #22543d;
 }
 
+/* 步骤说明区域 */
+.step-description {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 20px 0;
+}
+
+.step-description h3 {
+    margin: 0 0 12px 0;
+    color: #495057;
+    font-size: 16px;
+}
+
+.step-description p {
+    margin: 8px 0;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
+.step-description a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.step-description a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
 /* 必填标记 */
 .required {
     color: #dc3545;
     font-weight: bold;
 }
 
-/* 信息图标 */
-.info-icon {
-    margin-left: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    color: #007bff;
-    position: relative;
-    user-select: none;
-}
-
-.info-icon:hover {
-    color: #0056b3;
-}
-
-/* 点击触发tooltip，位于icon右边 */
-.info-icon.show-tooltip::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    top: 50%;
-    left: calc(100% + 10px);
-    transform: translateY(-50%);
-    background: #333;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: normal;
-    width: max-content;
-    max-width: 200px;
-    word-wrap: break-word;
-    z-index: 10000;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    pointer-events: none;
-}
 
 
 /* 转录区域 */

@@ -88,81 +88,20 @@ class VoiceRecognitionTester {
             this.updateDynamicHints();
         });
 
-        // 设置信息图标点击事件
-        this.setupInfoIconEvents();
-        
         // 初始化动态提示
         this.updateDynamicHints();
     }
 
-    setupInfoIconEvents() {
-        const infoIcons = document.querySelectorAll('.info-icon');
-        infoIcons.forEach((icon, index) => {
-            icon.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // 切换tooltip显示状态
-                const isShowing = icon.classList.contains('show-tooltip');
-                
-                // 先隐藏所有tooltip
-                infoIcons.forEach(i => i.classList.remove('show-tooltip'));
-                
-                // 如果之前没有显示，则显示当前tooltip
-                if (!isShowing) {
-                    icon.classList.add('show-tooltip');
-                    
-                    // 3秒后自动隐藏
-                    setTimeout(() => {
-                        icon.classList.remove('show-tooltip');
-                    }, 3000);
-                }
-            });
-        });
-        
-        // 点击其他地方隐藏tooltip
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.info-icon')) {
-                infoIcons.forEach(icon => icon.classList.remove('show-tooltip'));
-            }
-        });
-    }
 
     updateDynamicHints() {
         const appKey = this.appKey.value.trim();
         const accessKeyId = this.accessKeyId.value.trim();
         const accessKeySecret = this.accessKeySecret.value.trim();
 
-        // 找到第一个空字段并更新其提示
-        if (!appKey) {
-            this.appKey.placeholder = "📝 请先填写AppKey - 前往 https://nls-portal.console.aliyun.com/applist";
-            this.appKey.style.borderColor = "#ffc107";
-        } else {
-            this.appKey.placeholder = "从阿里云NLS控制台项目中获取";
-            this.appKey.style.borderColor = "#28a745";
-        }
-
-        if (!accessKeyId && appKey) {
-            this.accessKeyId.placeholder = "📝 接下来填写AccessKey ID - 前往 https://ram.console.aliyun.com/users";
-            this.accessKeyId.style.borderColor = "#ffc107";
-        } else if (accessKeyId) {
-            this.accessKeyId.placeholder = "从RAM用户管理页面获取";
-            this.accessKeyId.style.borderColor = "#28a745";
-        } else {
-            this.accessKeyId.placeholder = "从RAM用户管理页面获取";
-            this.accessKeyId.style.borderColor = "";
-        }
-
-        if (!accessKeySecret && appKey && accessKeyId) {
-            this.accessKeySecret.placeholder = "📝 最后填写AccessKey Secret - 在RAM用户页面创建";
-            this.accessKeySecret.style.borderColor = "#ffc107";
-        } else if (accessKeySecret) {
-            this.accessKeySecret.placeholder = "在RAM用户管理页面创建";
-            this.accessKeySecret.style.borderColor = "#28a745";
-        } else {
-            this.accessKeySecret.placeholder = "在RAM用户管理页面创建";
-            this.accessKeySecret.style.borderColor = "";
-        }
+        // 简单的视觉反馈：已填写的字段显示绿色边框
+        this.appKey.style.borderColor = appKey ? "#28a745" : "";
+        this.accessKeyId.style.borderColor = accessKeyId ? "#28a745" : "";
+        this.accessKeySecret.style.borderColor = accessKeySecret ? "#28a745" : "";
     }
 
     // 检查并自动获取Token
