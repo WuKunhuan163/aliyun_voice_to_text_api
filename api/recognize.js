@@ -1,53 +1,87 @@
-// 阿里云语音识别API - 统一接口（向后兼容）
+// 阿里云语音识别API - 基于正确的工作实现
 const { RPCClient } = require('@alicloud/pop-core');
 
 /**
  * 获取阿里云Token
  */
-async function getAliyunToken(appKey, accessKeyId, accessKeySecret) {
-    const client = new RPCClient({
-        accessKeyId: accessKeyId,
-        accessKeySecret: accessKeySecret,
-        endpoint: 'https://nls-meta.cn-shanghai.aliyuncs.com',
-        apiVersion: '2019-02-28'
-    });
-
+async function getAliyunToken(accessKeyId, accessKeySecret) {
     try {
-        const result = await client.request('CreateToken', {}, {
-            method: 'POST'
+        console.log('🔑 创建阿里云客户端...');
+        console.log('   AccessKey ID:', accessKeyId.substring(0, 8) + '...');
+        
+        // 使用@alicloud/pop-core创建客户端 - 与工作版本相同
+        const client = new RPCClient({
+            accessKeyId: accessKeyId,
+            accessKeySecret: accessKeySecret,
+            endpoint: 'http://nls-meta.cn-shanghai.aliyuncs.com', // HTTP，不是HTTPS
+            apiVersion: '2019-02-28'
         });
-
-        if (result && result.Token && result.Token.Id) {
-            return {
-                success: true,
-                token: result.Token.Id,
-                expireTime: result.Token.ExpireTime
-            };
-        } else {
-            return {
-                success: false,
-                error: 'Token获取失败'
-            };
-        }
+        
+        console.log('🔄 调用CreateToken API...');
+        
+        // 调用CreateToken API
+        const result = await client.request('CreateToken');
+        
+        console.log('✅ Token获取成功:');
+        console.log('   Token ID:', result.Token.Id.substring(0, 16) + '...');
+        console.log('   过期时间:', new Date(result.Token.ExpireTime * 1000).toLocaleString());
+        
+        return {
+            success: true,
+            token: result.Token.Id,
+            expireTime: result.Token.ExpireTime
+        };
+        
     } catch (error) {
+        console.error('❌ Token获取失败:', error);
+        console.error('   错误类型:', error.constructor.name);
+        console.error('   错误代码:', error.code || 'N/A');
+        console.error('   错误消息:', error.message);
+        
+        let errorMessage = error.message;
+        
+        if (error.code) {
+            switch (error.code) {
+                case 'InvalidAccessKeyId.NotFound':
+                    errorMessage = 'AccessKey ID 不存在，请检查是否正确';
+                    break;
+                case 'SignatureDoesNotMatch':
+                    errorMessage = 'AccessKey Secret 不正确，请检查是否正确';
+                    break;
+                case 'Forbidden':
+                case 'NoPermission':
+                    errorMessage = '权限不足，请检查AccessKey权限设置';
+                    break;
+                default:
+                    errorMessage = `API错误: ${error.message}`;
+                    break;
+            }
+        }
+        
         return {
             success: false,
-            error: error.message
+            error: errorMessage
         };
     }
 }
 
 /**
- * 执行语音识别
+ * 调用阿里云NLS语音识别API - 按照工作版本实现
  */
-async function recognizeAudio(audioData, appKey, token, format = 'pcm', sampleRate = 16000) {
+async function callAliyunNLS(requestData) {
+    const { token, audioData, appKey, format = 'pcm', sampleRate = 16000 } = requestData;
+    
     try {
-        // 构建请求URL
+        console.log('🎤 音频数据长度:', audioData.length);
+        console.log('🔑 使用Token:', token.substring(0, 16) + '...');
+        console.log('🔐 使用AppKey:', appKey);
+        
+        // 构建请求URL - 与工作版本完全相同
         const nlsUrl = 'https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr';
         
-        // 构建请求参数
+        // 构建请求参数 - 与工作版本完全相同
         const params = new URLSearchParams({
-            appkey: appKey,
+            appkey: appKey, // 使用客户端发送的AppKey
             token: token,
             format: format,
             sample_rate: sampleRate.toString(),
@@ -59,18 +93,12 @@ async function recognizeAudio(audioData, appKey, token, format = 'pcm', sampleRa
         
         console.log('🔗 调用阿里云NLS API:', requestUrl.substring(0, 100) + '...');
         
-        // 将音频数据转换为Buffer
-        let audioBuffer;
-        if (typeof audioData === 'string') {
-            // 如果是base64字符串格式
-            audioBuffer = Buffer.from(audioData, 'base64');
-        } else {
-            throw new Error('不支持的音频数据格式');
-        }
+        // 将音频数据转换为Buffer - 关键：audioData已经是数组格式
+        const audioBuffer = Buffer.from(audioData);
         
         console.log('📊 发送音频数据大小:', audioBuffer.length, 'bytes');
         
-        // 发送POST请求到阿里云NLS API
+        // 发送POST请求到阿里云NLS API - 与工作版本完全相同
         const response = await fetch(requestUrl, {
             method: 'POST',
             headers: {
@@ -91,15 +119,16 @@ async function recognizeAudio(audioData, appKey, token, format = 'pcm', sampleRa
         const responseText = await response.text();
         console.log('📄 阿里云API原始响应:', responseText);
         
-        // 解析响应
+        // 解析响应 - 与工作版本完全相同
         const result = JSON.parse(responseText);
         
         if (result.status === 20000000) {
-            // 识别成功
-            console.log('✅ 识别成功，result字段值:', result.result);
+            // 识别成功 - 与工作版本完全相同的返回格式
+            console.log('✅ 识别结果:', result.result);
             return {
                 success: true,
-                result: result.result || result.text || result.transcript || result.content || '',
+                text: result.result, // 使用text字段，与前端期望一致
+                confidence: 0.9, // 阿里云API可能不返回置信度
                 timestamp: Date.now()
             };
         } else {
@@ -112,13 +141,10 @@ async function recognizeAudio(audioData, appKey, token, format = 'pcm', sampleRa
         
         // 如果是网络错误，返回更详细的信息
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
-            throw new Error('网络连接失败，请检查网络');
+            throw new Error('网络连接失败，请检查网络连接');
         }
         
-        return {
-            success: false,
-            error: error.message
-        };
+        throw error;
     }
 }
 
@@ -151,7 +177,6 @@ export default async function handler(req, res) {
             appKey, 
             accessKeyId, 
             accessKeySecret, 
-            maxDuration = 60,
             format = 'pcm',
             sampleRate = 16000
         } = req.body;
@@ -164,16 +189,9 @@ export default async function handler(req, res) {
             });
         }
 
-        // 添加音频数据大小检查
-        if (audioData.length > 10 * 1024 * 1024) { // 10MB限制
-            return res.status(413).json({
-                success: false,
-                error: '音频文件过大，请录制较短的音频'
-            });
-        }
-
+        // 获取访问令牌
         console.log('正在获取阿里云访问令牌...');
-        const tokenResult = await getAliyunToken(appKey, accessKeyId, accessKeySecret);
+        const tokenResult = await getAliyunToken(accessKeyId, accessKeySecret);
         
         if (!tokenResult.success) {
             return res.status(401).json({
@@ -183,41 +201,48 @@ export default async function handler(req, res) {
         }
 
         console.log('访问令牌获取成功，开始语音识别...');
-        console.log(`音频数据大小: ${audioData.length} 字符 (base64)`);
         
-        // 执行语音识别
-        const recognitionResult = await recognizeAudio(
-            audioData,
-            appKey, 
-            tokenResult.token,
-            format,
-            sampleRate
-        );
-
-        if (recognitionResult.success) {
-            console.log('语音识别成功');
-            return res.json({
-                success: true,
-                data: {
-                    text: recognitionResult.result,
-                    confidence: 0.95, // 阿里云不返回置信度，使用固定值
-                    duration: maxDuration,
-                    tokenExpireTime: tokenResult.expireTime
-                }
-            });
-        } else {
-            console.error('语音识别失败:', recognitionResult.error);
-            return res.status(500).json({
+        // 检查音频数据格式 - audioData应该是数组格式
+        if (!Array.isArray(audioData)) {
+            return res.status(400).json({
                 success: false,
-                error: recognitionResult.error
+                error: '音频数据格式错误，应该是数组格式'
             });
         }
 
+        // 添加音频数据大小检查
+        if (audioData.length > 10 * 1024 * 1024) { // 10MB限制
+            return res.status(413).json({
+                success: false,
+                error: '音频文件过大，请录制较短的音频'
+            });
+        }
+        
+        console.log(`音频数据大小: ${audioData.length} bytes (数组)`);
+        
+        // 执行语音识别 - 按照工作版本的方式
+        const recognitionResult = await callAliyunNLS({
+            token: tokenResult.token,
+            audioData: audioData, // 直接传递数组
+            appKey: appKey,
+            format: format,
+            sampleRate: sampleRate
+        });
+
+        console.log('语音识别成功，识别结果:', recognitionResult.text);
+        return res.json({
+            success: true,
+            data: {
+                text: recognitionResult.text,
+                tokenExpireTime: tokenResult.expireTime
+            }
+        });
+
     } catch (error) {
-        console.error('处理语音识别请求时发生错误:', error);
+        console.error('API处理错误:', error);
         return res.status(500).json({
             success: false,
-            error: error.message
+            error: error.message || '服务器内部错误'
         });
     }
 }

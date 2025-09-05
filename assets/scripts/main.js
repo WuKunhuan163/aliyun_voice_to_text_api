@@ -337,18 +337,19 @@ class VoiceRecognitionTester {
             
             const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
             
-            // 转换为base64
-            const audioBase64 = await this.blobToBase64(audioBlob);
+            // 转换为字节数组（按照工作版本的方式）
+            const audioArrayBuffer = await this.blobToArrayBuffer(audioBlob);
+            const audioByteArray = Array.from(new Uint8Array(audioArrayBuffer));
             
             // 保存录音数据供下载使用
             this.currentAudioBlob = audioBlob;
-            this.currentAudioBase64 = audioBase64;
+            this.currentAudioByteArray = audioByteArray;
             
             // 立即显示下载按钮
             this.downloadButton.style.display = 'block';
             
             // 自动调用语音识别
-            await this.recognizeAudio(audioBase64);
+            await this.recognizeAudio(audioByteArray);
             
         } catch (error) {
             console.error('录音处理失败:', error);
@@ -373,10 +374,21 @@ class VoiceRecognitionTester {
         });
     }
 
-    async recognizeAudio(audioBase64) {
+    async blobToArrayBuffer(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                resolve(reader.result);
+            };
+            reader.onerror = reject;
+            reader.readAsArrayBuffer(blob);
+        });
+    }
+
+    async recognizeAudio(audioByteArray) {
         try {
             console.log('🚀 开始API调用...');
-            console.log('📊 音频数据大小:', audioBase64.length, '字符 (base64)');
+            console.log('📊 音频数据大小:', audioByteArray.length, 'bytes (数组)');
             console.log('🔗 API地址:', this.apiUrl.value);
             console.log('🔐 AppKey:', this.appKey.value);
             console.log('🔑 AccessKeyId:', this.accessKeyId.value);
@@ -384,16 +396,17 @@ class VoiceRecognitionTester {
             this.showStatus('正在调用API进行语音识别...', 'processing');
             
             const requestBody = {
-                audioData: audioBase64,
+                audioData: audioByteArray, // 发送字节数组而不是base64
                 appKey: this.appKey.value,
                 accessKeyId: this.accessKeyId.value,
                 accessKeySecret: this.accessKeySecret.value,
-                maxDuration: 60
+                format: 'pcm',
+                sampleRate: 16000
             };
             
             console.log('📤 发送请求体:', {
                 ...requestBody,
-                audioData: `[${audioBase64.length} chars]`,
+                audioData: `[${audioByteArray.length} bytes]`,
                 accessKeySecret: '[HIDDEN]'
             });
             
