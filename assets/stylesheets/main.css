@@ -72,8 +72,7 @@ h1 {
 }
 
 /* 表单字段通用样式 */
-.form-group input,
-.form-group .readonly-field {
+.form-group input {
     flex: 1;
     padding: 12px;
     border: 2px solid #e2e8f0;
@@ -81,28 +80,21 @@ h1 {
     font-size: 14px;
     box-sizing: border-box; /* 确保padding包含在宽度内 */
     max-width: 100%; /* 确保不超出容器 */
-}
-
-/* input特定样式 */
-.form-group input {
     transition: border-color 0.3s;
 }
 
-.form-group input:focus {
+/* 可编辑input的focus效果 */
+.form-group input:not([disabled]):focus {
     outline: none;
     border-color: #667eea;
 }
 
 /* readonly-field特定样式 */
-.form-group .readonly-field {
+.form-group input.readonly-field {
     background: #f8f9fa;
     color: #495057;
     font-family: monospace;
-    display: block;
-    min-height: 20px; /* 确保空内容时也有一致的高度 */
-    line-height: 20px;
-    word-wrap: break-word; /* 防止长文本溢出 */
-    overflow-wrap: break-word; /* 现代浏览器支持 */
+    cursor: default;
 }
 
 .readonly-field.has-token {
