@@ -161,6 +161,30 @@
             border-color: #48bb78;
         }
 
+        .transcription-textarea.error {
+            background: #fed7d7;
+            border-color: #e53e3e;
+            color: #742a2a;
+        }
+
+        .transcription-textarea.processing {
+            background: #bee3f8;
+            border-color: #3182ce;
+            color: #2a4365;
+        }
+
+        .transcription-textarea.success {
+            background: #c6f6d5;
+            border-color: #38a169;
+            color: #22543d;
+        }
+
+        .transcription-textarea.warning {
+            background: #fef5e7;
+            border-color: #d69e2e;
+            color: #744210;
+        }
+
         .token-field {
             margin: 20px 0;
             padding: 16px;
@@ -223,12 +247,13 @@
             background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
             color: white;
             border: none;
-            padding: 15px 25px;
-            border-radius: 50px;
+            padding: 14px 28px;
+            border-radius: 8px;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 120px;
         }
 
         .download-button:hover {
@@ -240,13 +265,13 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+            min-width: 140px;
         }
 
         .record-button:hover {
@@ -855,12 +880,18 @@
                 
                 if (textLength >= 10) {
                     // 绿色：成功，文字超过10字
+                    this.transcriptionResult.value = `录音结果：${text}`;
+                    this.transcriptionResult.className = 'transcription-textarea success has-content';
                     this.showStatus(`识别成功！识别了 ${textLength} 个字符`, 'success');
                 } else if (textLength > 0) {
                     // 黄色：成功但文字较少
+                    this.transcriptionResult.value = `录音结果：${text}`;
+                    this.transcriptionResult.className = 'transcription-textarea warning has-content';
                     this.showStatus(`识别成功，但文字较少：${textLength} 个字符`, 'warning');
                 } else {
                     // 红色：识别失败或无内容
+                    this.transcriptionResult.value = '识别成功但无文字内容';
+                    this.transcriptionResult.className = 'transcription-textarea error';
                     this.showStatus('识别成功但无文字内容', 'error');
                 }
             }
@@ -912,6 +943,11 @@
             }
 
             showStatus(message, type) {
+                // 使用转录框显示状态信息
+                this.transcriptionResult.value = message;
+                this.transcriptionResult.className = `transcription-textarea ${type}`;
+                
+                // 同时更新独立的状态区域（如果需要的话）
                 this.status.style.display = 'block';
                 this.status.className = `status ${type}`;
                 this.status.textContent = message;

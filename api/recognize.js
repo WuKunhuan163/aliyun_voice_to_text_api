@@ -1,35 +1,35 @@
 // 阿里云语音识别API - 统一接口（向后兼容）
-// 这个接口内部调用分离的get-token和recognize-audio API
+const { RPCClient } = require('@alicloud/pop-core');
 
 /**
  * 获取阿里云Token
  */
-async function getToken(appKey, accessKeyId, accessKeySecret) {
+async function getAliyunToken(appKey, accessKeyId, accessKeySecret) {
+    const client = new RPCClient({
+        accessKeyId: accessKeyId,
+        accessKeySecret: accessKeySecret,
+        endpoint: 'https://nls-meta.cn-shanghai.aliyuncs.com',
+        apiVersion: '2019-02-28'
+    });
+
     try {
-        // 构建内部API URL
-        const baseUrl = process.env.VERCEL_URL ? 
-            `https://${process.env.VERCEL_URL}` : 
-            'http://localhost:3000';
-        
-        const response = await fetch(`${baseUrl}/api/get-token`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                appKey,
-                accessKeyId,
-                accessKeySecret
-            })
+        const result = await client.request('CreateToken', {}, {
+            method: 'POST'
         });
 
-        if (!response.ok) {
-            throw new Error(`Token API错误: ${response.status}`);
+        if (result && result.Token && result.Token.Id) {
+            return {
+                success: true,
+                token: result.Token.Id,
+                expireTime: result.Token.ExpireTime
+            };
+        } else {
+            return {
+                success: false,
+                error: 'Token获取失败'
+            };
         }
-
-        return await response.json();
     } catch (error) {
-        console.error('获取Token失败:', error);
         return {
             success: false,
             error: error.message
@@ -42,32 +42,79 @@ async function getToken(appKey, accessKeyId, accessKeySecret) {
  */
 async function recognizeAudio(audioData, appKey, token, format = 'pcm', sampleRate = 16000) {
     try {
-        // 构建内部API URL
-        const baseUrl = process.env.VERCEL_URL ? 
-            `https://${process.env.VERCEL_URL}` : 
-            'http://localhost:3000';
+        // 构建请求URL
+        const nlsUrl = 'https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr';
         
-        const response = await fetch(`${baseUrl}/api/recognize-audio`, {
+        // 构建请求参数
+        const params = new URLSearchParams({
+            appkey: appKey,
+            token: token,
+            format: format,
+            sample_rate: sampleRate.toString(),
+            enable_punctuation_prediction: 'true',
+            enable_inverse_text_normalization: 'true'
+        });
+        
+        const requestUrl = `${nlsUrl}?${params}`;
+        
+        console.log('🔗 调用阿里云NLS API:', requestUrl.substring(0, 100) + '...');
+        
+        // 将音频数据转换为Buffer
+        let audioBuffer;
+        if (typeof audioData === 'string') {
+            // 如果是base64字符串格式
+            audioBuffer = Buffer.from(audioData, 'base64');
+        } else {
+            throw new Error('不支持的音频数据格式');
+        }
+        
+        console.log('📊 发送音频数据大小:', audioBuffer.length, 'bytes');
+        
+        // 发送POST请求到阿里云NLS API
+        const response = await fetch(requestUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/octet-stream',
+                'Content-Length': audioBuffer.length.toString()
             },
-            body: JSON.stringify({
-                audioData,
-                appKey,
-                token,
-                format,
-                sampleRate
-            })
+            body: audioBuffer
         });
-
+        
+        console.log('📡 阿里云API响应状态:', response.status);
+        
         if (!response.ok) {
-            throw new Error(`语音识别API错误: ${response.status}`);
+            const errorText = await response.text();
+            console.error('❌ 阿里云API错误响应:', errorText);
+            throw new Error(`阿里云API错误: ${response.status} - ${errorText}`);
         }
-
-        return await response.json();
+        
+        const responseText = await response.text();
+        console.log('📄 阿里云API原始响应:', responseText);
+        
+        // 解析响应
+        const result = JSON.parse(responseText);
+        
+        if (result.status === 20000000) {
+            // 识别成功
+            console.log('✅ 识别成功，result字段值:', result.result);
+            return {
+                success: true,
+                result: result.result || result.text || result.transcript || result.content || '',
+                timestamp: Date.now()
+            };
+        } else {
+            // 识别失败
+            throw new Error(`阿里云识别失败: ${result.message || '未知错误'}`);
+        }
+        
     } catch (error) {
-        console.error('语音识别失败:', error);
+        console.error('❌ 调用阿里云NLS失败:', error);
+        
+        // 如果是网络错误，返回更详细的信息
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('网络连接失败，请检查网络');
+        }
+        
         return {
             success: false,
             error: error.message
@@ -126,7 +173,7 @@ export default async function handler(req, res) {
         }
 
         console.log('正在获取阿里云访问令牌...');
-        const tokenResult = await getToken(appKey, accessKeyId, accessKeySecret);
+        const tokenResult = await getAliyunToken(appKey, accessKeyId, accessKeySecret);
         
         if (!tokenResult.success) {
             return res.status(401).json({
