@@ -102,6 +102,25 @@ class VoiceRecognitionTester {
         this.appKey.style.borderColor = appKey ? "#28a745" : "";
         this.accessKeyId.style.borderColor = accessKeyId ? "#28a745" : "";
         this.accessKeySecret.style.borderColor = accessKeySecret ? "#28a745" : "";
+
+        // 在转录框中显示动态配置指导
+        if (!appKey) {
+            this.transcriptionResult.value = "步骤1: 请填写AppKey\n\n前往阿里云NLS控制台创建项目获取AppKey:\nhttps://nls-portal.console.aliyun.com/applist";
+            this.transcriptionResult.className = "transcription-textarea";
+        } else if (!accessKeyId) {
+            this.transcriptionResult.value = "步骤2: 请填写AccessKey ID\n\n前往RAM用户管理页面创建AccessKey:\nhttps://ram.console.aliyun.com/users";
+            this.transcriptionResult.className = "transcription-textarea";
+        } else if (!accessKeySecret) {
+            this.transcriptionResult.value = "步骤3: 请填写AccessKey Secret\n\n在RAM用户管理页面创建AccessKey Secret";
+            this.transcriptionResult.className = "transcription-textarea";
+        } else if (!this.currentToken) {
+            this.transcriptionResult.value = "正在获取Token，请稍候...";
+            this.transcriptionResult.className = "transcription-textarea processing";
+        } else {
+            this.transcriptionResult.value = "";
+            this.transcriptionResult.placeholder = "录音完成后，语音识别结果将显示在这里...";
+            this.transcriptionResult.className = "transcription-textarea";
+        }
     }
 
     // 检查并自动获取Token
@@ -148,6 +167,7 @@ class VoiceRecognitionTester {
             this.tokenField.classList.add('has-token');
                 this.showStatus('Token获取成功，可以开始录音', 'success');
                 this.recordButton.disabled = false;
+                this.updateDynamicHints();
             } else {
                 throw new Error(result.error);
             }

@@ -18,12 +18,6 @@
                 <span class="readonly-field">https://aliyun-voice-to-text-api.vercel.app/api/recognize</span>
             </div>
             
-            <div class="step-description">
-                <h3>配置步骤：</h3>
-                <p><strong>1. 获取AppKey：</strong>前往 <a href="https://nls-portal.console.aliyun.com/applist" target="_blank">阿里云NLS控制台</a> 创建项目，获取AppKey</p>
-                <p><strong>2. 创建AccessKey：</strong>前往 <a href="https://ram.console.aliyun.com/users" target="_blank">RAM用户管理页面</a> 创建用户和AccessKey</p>
-                <p><strong>注意：</strong>本应用程序只在当前session使用AccessKey，不会存储您的密钥信息</p>
-            </div>
             
             <div class="form-group">
                 <label for="appKey">AppKey <span class="required">*</span></label>
@@ -53,7 +47,7 @@
                 </div>
             </div>
             <textarea id="transcriptionResult" class="transcription-textarea" 
-                      placeholder="录音完成后，语音识别结果将显示在这里..." 
+                      placeholder="请先配置阿里云密钥信息..." 
                       readonly></textarea>
         </div>
 
