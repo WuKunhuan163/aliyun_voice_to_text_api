@@ -186,30 +186,31 @@
         }
 
         .token-field {
-            margin: 20px 0;
-            padding: 16px;
-            background: #f0f4f8;
-            border-radius: 10px;
-            border-left: 4px solid #4299e1;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .token-field label {
-            display: block;
-            margin-bottom: 8px;
-            color: #2d3748;
-            font-weight: 600;
+            min-width: 140px;
+            color: #4a5568;
+            font-weight: 500;
             font-size: 14px;
+            text-align: left;
+            margin: 0;
         }
 
         .token-field input {
-            width: 100%;
+            flex: 1;
             padding: 12px;
-            border: 2px solid #cbd5e0;
+            border: 2px solid #e2e8f0;
             border-radius: 8px;
             font-size: 13px;
             background: #e2e8f0;
             color: #4a5568;
             font-family: monospace;
+            transition: border-color 0.3s;
         }
 
         .token-field input.has-token {
@@ -218,23 +219,6 @@
             color: #22543d;
         }
 
-        .token-status {
-            margin-top: 8px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .token-status.loading {
-            color: #4299e1;
-        }
-
-        .token-status.success {
-            color: #38a169;
-        }
-
-        .token-status.error {
-            color: #e53e3e;
-        }
 
         .record-section {
             margin: 25px 0;
@@ -435,7 +419,6 @@
             <div class="token-field">
                 <label for="tokenField">Token:</label>
                 <input type="text" id="tokenField" placeholder="将在填写密钥后自动获取..." readonly>
-                <div class="token-status" id="tokenStatus"></div>
             </div>
         </div>
 
@@ -505,7 +488,6 @@
                 
                 // Token相关元素
                 this.tokenField = document.getElementById('tokenField');
-                this.tokenStatus = document.getElementById('tokenStatus');
                 
                 this.initMiniWaveform();
             }
@@ -563,18 +545,16 @@
                     // 清除Token和状态
                     this.tokenField.value = '';
                     this.tokenField.classList.remove('has-token');
-                    this.tokenStatus.textContent = '';
-                    this.tokenStatus.className = 'token-status';
                     this.recordButton.disabled = true;
                     this.currentToken = null;
+                    this.showStatus('请完整填写阿里云凭据信息', 'error');
                 }
             }
 
             // 自动获取Token
             async getTokenAutomatically(appKey, accessKeyId, accessKeySecret) {
                 try {
-                    this.tokenStatus.textContent = '正在获取Token...';
-                    this.tokenStatus.className = 'token-status loading';
+                    this.showStatus('正在获取Token...', 'processing');
                     this.recordButton.disabled = true;
 
                     const response = await fetch(this.apiUrl.value.replace('/recognize', '/get-token'), {
@@ -595,8 +575,7 @@
                         this.currentToken = result.token;
                         this.tokenField.value = result.token;
                         this.tokenField.classList.add('has-token');
-                        this.tokenStatus.textContent = 'Token获取成功';
-                        this.tokenStatus.className = 'token-status success';
+                        this.showStatus('Token获取成功，可以开始录音', 'success');
                         this.recordButton.disabled = false;
                     } else {
                         throw new Error(result.error);
@@ -606,8 +585,7 @@
                     console.error('Token获取失败:', error);
                     this.tokenField.value = '';
                     this.tokenField.classList.remove('has-token');
-                    this.tokenStatus.textContent = `获取失败: ${error.message}`;
-                    this.tokenStatus.className = 'token-status error';
+                    this.showStatus(`Token获取失败: ${error.message}`, 'error');
                     this.recordButton.disabled = true;
                     this.currentToken = null;
                 }
