@@ -36,8 +36,6 @@
   "success": true,
   "data": {
     "text": "识别的文字内容",
-    "confidence": 0.95,
-    "duration": 3.2,
     "tokenExpireTime": 1642694400
   }
 }
