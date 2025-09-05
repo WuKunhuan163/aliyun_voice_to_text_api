@@ -175,7 +175,7 @@ class VoiceRecognitionTester {
             await this.getTokenAutomatically(appKey, accessKeyId, accessKeySecret);
         } else {
             // 清除Token和状态
-            this.tokenField.textContent = '';
+            this.tokenField.textContent = '将在填写密钥后自动获取...';
             this.tokenField.classList.remove('has-token');
             this.recordButton.disabled = true;
             this.currentToken = null;
@@ -215,7 +215,7 @@ class VoiceRecognitionTester {
 
         } catch (error) {
             console.error('Token获取失败:', error);
-            this.tokenField.textContent = '';
+            this.tokenField.textContent = '获取失败，请检查密钥信息';
             this.tokenField.classList.remove('has-token');
             this.showStatus(`Token获取失败: ${error.message}`, 'error');
             this.recordButton.disabled = true;

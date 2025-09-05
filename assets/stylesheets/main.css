@@ -96,6 +96,8 @@ h1 {
     color: #495057;
     font-family: monospace;
     display: block;
+    min-height: 20px; /* 确保空内容时也有一致的高度 */
+    line-height: 20px;
 }
 
 .readonly-field.has-token {
