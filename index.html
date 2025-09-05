@@ -19,16 +19,25 @@
             </div>
             
             <div class="form-group">
-                <label for="appKey">AppKey:</label>
-                <input type="text" id="appKey" placeholder="阿里云应用AppKey">
+                <label for="appKey">
+                    AppKey <span class="required">*</span>
+                    <i class="info-icon" data-tooltip="前往阿里云智能语音交互控制台创建项目，获取AppKey">ℹ️</i>
+                </label>
+                <input type="text" id="appKey" placeholder="从阿里云NLS控制台项目中获取">
             </div>
             <div class="form-group">
-                <label for="accessKeyId">AccessKey ID:</label>
-                <input type="text" id="accessKeyId" placeholder="阿里云Access Key ID">
+                <label for="accessKeyId">
+                    AccessKey ID <span class="required">*</span>
+                    <i class="info-icon" data-tooltip="在RAM用户管理页面创建AccessKey，用于API身份验证">ℹ️</i>
+                </label>
+                <input type="text" id="accessKeyId" placeholder="从RAM用户管理页面获取">
             </div>
             <div class="form-group">
-                <label for="accessKeySecret">AccessKey Secret:</label>
-                <input type="password" id="accessKeySecret" placeholder="阿里云Access Key Secret">
+                <label for="accessKeySecret">
+                    AccessKey Secret <span class="required">*</span>
+                    <i class="info-icon" data-tooltip="注意不要泄露Access Key。本应用程序只在当前session使用">ℹ️</i>
+                </label>
+                <input type="password" id="accessKeySecret" placeholder="在RAM用户管理页面创建">
             </div>
             
             <div class="form-group">

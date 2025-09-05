@@ -26,6 +26,7 @@ body {
     overflow-x: scroll;
     width: 90%;
     text-align: center;
+    margin-top: 30px;
 }
 
 h1 {
@@ -101,6 +102,47 @@ h1 {
     background: #c6f6d5;
     border-color: #48bb78;
     color: #22543d;
+}
+
+/* 必填标记 */
+.required {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+/* 信息图标 */
+.info-icon {
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #007bff;
+    position: relative;
+    user-select: none;
+}
+
+.info-icon:hover {
+    color: #0056b3;
+}
+
+/* 点击触发tooltip，位于icon右边 */
+.info-icon.show-tooltip::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 10px);
+    transform: translateY(-50%);
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: normal;
+    width: max-content;
+    max-width: 200px;
+    word-wrap: break-word;
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    pointer-events: none;
 }
 
 
