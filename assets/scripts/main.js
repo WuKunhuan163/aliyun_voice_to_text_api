@@ -117,7 +117,7 @@ class VoiceRecognitionTester {
             this.transcriptionResult.innerHTML = '正在获取Token，请稍候...';
             this.transcriptionResult.className = "transcription-textarea processing";
         } else {
-            this.transcriptionResult.innerHTML = '✅ 配置完成！点击"开始录音测试"按钮开始语音识别';
+            this.transcriptionResult.innerHTML = '配置完成！点击"开始录音测试"按钮开始语音识别';
             this.transcriptionResult.className = "transcription-textarea success";
         }
     }
