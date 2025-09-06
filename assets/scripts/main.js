@@ -644,20 +644,20 @@ class VoiceRecognitionTester {
             this.downloadButton.textContent = '转换中...';
             this.downloadButton.disabled = true;
             
-            // 将音频转换为WAV格式（浏览器原生不支持MP3编码）
-            const wavBlob = await this.convertToWav(this.currentAudioBlob);
+            // 将音频转换为MP3格式（模仿local_server）
+            const mp3Blob = await this.convertToMp3(this.currentAudioBlob);
             
-            // 下载WAV文件（更兼容的音频格式）
-            const url = URL.createObjectURL(wavBlob);
+            // 下载MP3文件
+            const url = URL.createObjectURL(mp3Blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `recording_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.wav`;
+            a.download = `recording_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.mp3`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            this.showStatus('WAV文件下载成功', 'success');
+            this.showStatus('MP3文件下载成功', 'success');
         } catch (error) {
             console.error('音频转换失败:', error);
             this.showStatus('音频转换失败: ' + error.message, 'error');
@@ -668,62 +668,55 @@ class VoiceRecognitionTester {
         }
     }
     
-    async convertToWav(audioBlob) {
-        // 使用Web Audio API将音频转换为WAV格式
+    async convertToMp3(audioBlob) {
+        // 使用Web Audio API解码音频数据
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         const arrayBuffer = await audioBlob.arrayBuffer();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
-        // 转换为WAV格式
-        const wavBuffer = this.audioBufferToWav(audioBuffer);
+        // 转换为MP3格式（模仿local_server的实现）
+        const mp3Blob = this.encodeToMp3(audioBuffer);
         
-        return new Blob([wavBuffer], { type: 'audio/wav' });
+        return mp3Blob;
     }
     
-    audioBufferToWav(buffer) {
-        const length = buffer.length;
-        const numberOfChannels = buffer.numberOfChannels;
-        const sampleRate = buffer.sampleRate;
-        const bytesPerSample = 2; // 16-bit
-        const blockAlign = numberOfChannels * bytesPerSample;
-        const byteRate = sampleRate * blockAlign;
-        const dataSize = length * blockAlign;
+    encodeToMp3(audioBuffer) {
+        // 模仿local_server的MP3编码实现
+        const sampleRate = audioBuffer.sampleRate;
+        const pcmData = audioBuffer.getChannelData(0); // 获取第一个声道数据
         
-        const arrayBuffer = new ArrayBuffer(44 + dataSize);
-        const view = new DataView(arrayBuffer);
+        // 使用lamejs进行MP3编码
+        const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128); // 1个声道, 采样率, 128kbps
+        const pcmInt16 = this.convertFloat32ToInt16(pcmData);
+        const mp3Data = [];
+        const blockSize = 1152; // MP3编码块大小
         
-        // WAV文件头
-        const writeString = (offset, string) => {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        };
-        
-        writeString(0, 'RIFF');
-        view.setUint32(4, 36 + dataSize, true);
-        writeString(8, 'WAVE');
-        writeString(12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true);
-        view.setUint16(22, numberOfChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, byteRate, true);
-        view.setUint16(32, blockAlign, true);
-        view.setUint16(34, 16, true);
-        writeString(36, 'data');
-        view.setUint32(40, dataSize, true);
-        
-        // 音频数据
-        let offset = 44;
-        for (let i = 0; i < length; i++) {
-            for (let channel = 0; channel < numberOfChannels; channel++) {
-                const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
-                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-                offset += 2;
+        for (let i = 0; i < pcmInt16.length; i += blockSize) {
+            const chunk = pcmInt16.slice(i, i + blockSize);
+            const mp3buf = mp3encoder.encodeBuffer(chunk);
+            if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
             }
         }
         
-        return arrayBuffer;
+        // 完成编码
+        const finalBuffer = mp3encoder.flush();
+        if (finalBuffer.length > 0) {
+            mp3Data.push(finalBuffer);
+        }
+        
+        const mp3Blob = new Blob(mp3Data, { type: 'audio/mp3' });
+        return mp3Blob;
+    }
+    
+    convertFloat32ToInt16(float32Array) {
+        // 将Float32数组转换为Int16数组
+        const int16Array = new Int16Array(float32Array.length);
+        for (let i = 0; i < float32Array.length; i++) {
+            const sample = Math.max(-1, Math.min(1, float32Array[i]));
+            int16Array[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        }
+        return int16Array;
     }
 
     updateUI() {
