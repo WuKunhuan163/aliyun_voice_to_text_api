@@ -251,7 +251,7 @@ class VoiceRecognitionTester {
             let errorMessage = '录音启动失败: ';
             
             if (error.name === 'NotAllowedError') {
-                errorMessage += '麦克风权限被拒绝。请在浏览器设置中允许麦克风访问权限。';
+                errorMessage = this.getBrowserPermissionGuide();
             } else if (error.name === 'NotFoundError') {
                 errorMessage += '未找到麦克风设备。请确保设备已连接麦克风。';
             } else if (error.name === 'NotSupportedError') {
@@ -272,6 +272,76 @@ class VoiceRecognitionTester {
                 }, 3000);
             }
         }
+    }
+    
+    getBrowserPermissionGuide() {
+        // 检测浏览器类型
+        const isChrome = /Chrome/.test(navigator.userAgent);
+        const isFirefox = /Firefox/.test(navigator.userAgent);
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        const isEdge = /Edg/.test(navigator.userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        let guide = '🎤 麦克风权限被拒绝，请按以下步骤设置：\n\n';
+        
+        if (isChrome) {
+            guide += '📌 Chrome浏览器设置：\n';
+            guide += '1. 点击地址栏左侧的🔒锁图标\n';
+            guide += '2. 找到"麦克风"选项，点击选择"允许"\n';
+            guide += '3. 刷新页面重新尝试录音\n\n';
+            guide += '或者：\n';
+            guide += '1. 点击右上角⋮菜单 → 设置\n';
+            guide += '2. 隐私和安全 → 网站设置 → 麦克风\n';
+            guide += '3. 确保麦克风设置为"允许"\n';
+            guide += '4. 在"允许"列表中添加本网站\n\n';
+        }
+        
+        if (isFirefox) {
+            guide += '📌 Firefox浏览器设置：\n';
+            guide += '1. 点击地址栏左侧的🔒图标\n';
+            guide += '2. 点击"权限"选项卡\n';
+            guide += '3. 找到"使用麦克风"，选择"允许"\n';
+            guide += '4. 刷新页面重新尝试\n\n';
+            guide += '或者：\n';
+            guide += '1. 菜单 → 设置 → 隐私与安全\n';
+            guide += '2. 权限 → 麦克风 → 设置\n';
+            guide += '3. 找到本网站，状态改为"允许"\n\n';
+        }
+        
+        if (isSafari) {
+            guide += '📌 Safari浏览器设置：\n';
+            guide += '1. 点击地址栏左侧的网站设置图标\n';
+            guide += '2. 将"麦克风"设置为"允许"\n';
+            guide += '3. 刷新页面重新尝试\n\n';
+            guide += '或者：\n';
+            guide += '1. Safari菜单 → 偏好设置\n';
+            guide += '2. 网站 → 麦克风\n';
+            guide += '3. 找到本网站，选择"允许"\n\n';
+        }
+        
+        if (isEdge) {
+            guide += '📌 Edge浏览器设置：\n';
+            guide += '1. 点击地址栏左侧的🔒图标\n';
+            guide += '2. 点击"权限"，找到麦克风\n';
+            guide += '3. 选择"允许"\n';
+            guide += '4. 刷新页面重新尝试\n\n';
+        }
+        
+        if (isMobile) {
+            guide += '📱 移动端额外注意：\n';
+            guide += '• 确保使用HTTPS访问网站\n';
+            guide += '• 检查系统设置中的浏览器麦克风权限\n';
+            guide += '• 某些浏览器需要在系统设置中单独允许\n\n';
+        }
+        
+        guide += '🔧 通用解决方案：\n';
+        guide += '• 确保网站使用HTTPS访问\n';
+        guide += '• 重新加载页面后再次尝试\n';
+        guide += '• 清除浏览器缓存和Cookie\n';
+        guide += '• 检查系统麦克风设备是否正常工作\n';
+        guide += '• 重启浏览器后重新尝试';
+        
+        return guide;
     }
     
     async checkMicrophonePermission() {
