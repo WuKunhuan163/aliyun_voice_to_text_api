@@ -48,6 +48,46 @@ async function getAliyunToken(accessKeyId, accessKeySecret) {
 }
 
 /**
+ * 根据接收到的数据类型提供格式转换建议
+ */
+function getAudioFormatSuggestion(receivedType) {
+    const suggestions = {
+        'object': {
+            message: '接收到对象类型，可能是Blob或其他对象',
+            solution: '如果是Blob，请先转换为ArrayBuffer，然后转为Uint8Array数组',
+            code: `
+// 如果audioData是Blob
+const arrayBuffer = await audioBlob.arrayBuffer();
+const audioData = Array.from(new Uint8Array(arrayBuffer));
+
+// 或者如果是其他格式，确保转换为数组
+const audioData = Array.from(new Uint8Array(yourAudioBuffer));`
+        },
+        'string': {
+            message: '接收到字符串类型，这通常不是有效的音频数据',
+            solution: '音频数据应该是二进制数据，不能是字符串',
+            code: '请确保传递的是音频的二进制数据，而不是Base64字符串或其他文本格式'
+        },
+        'undefined': {
+            message: '音频数据未定义',
+            solution: '请确保在请求体中包含audioData字段',
+            code: '{ "audioData": [...], "appKey": "...", "token": "..." }'
+        },
+        'number': {
+            message: '接收到单个数字，但需要数组',
+            solution: '音频数据应该是数字数组，不是单个数字',
+            code: 'const audioData = Array.from(new Uint8Array(audioBuffer));'
+        }
+    };
+
+    return suggestions[receivedType] || {
+        message: `未知的数据类型: ${receivedType}`,
+        solution: '请确保音频数据是Uint8Array转换后的数组格式',
+        code: 'const audioData = Array.from(new Uint8Array(audioBuffer));'
+    };
+}
+
+/**
  * 调用阿里云NLS语音识别API - 完全基于local_server的实现
  */
 async function callAliyunNLS(requestData) {
@@ -244,18 +284,91 @@ export default async function handler(req, res) {
         // 检查音频数据格式 - audioData应该是数组格式
         if (!Array.isArray(audioData)) {
             console.log(`❌ 音频数据格式错误: ${typeof audioData}, 期望: array`);
+            
+            // 提供详细的格式转换建议
+            const formatSuggestion = getAudioFormatSuggestion(typeof audioData);
+            
             return res.status(400).json({
                 success: false,
-                error: `音频数据格式错误，收到: ${typeof audioData}，期望: array`
+                error: `音频数据格式不正确`,
+                details: {
+                    received: typeof audioData,
+                    expected: 'array',
+                    description: '音频数据应该是Uint8Array转换后的数组格式'
+                },
+                suggestion: formatSuggestion,
+                examples: {
+                    webmToMp3: {
+                        description: '如果您有WebM格式的录音，可以使用lamejs转换为MP3后再处理',
+                        codeExample: `
+// 1. 使用lamejs将WebM转换为MP3
+// 首先引入lamejs库: <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js"></script>
+
+// 2. 获取WebM录音的PCM数据
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+const arrayBuffer = await webmBlob.arrayBuffer();
+const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+const pcmData = audioBuffer.getChannelData(0); // Float32Array
+
+// 3. 转换为正确格式
+const buffer = new ArrayBuffer(pcmData.length * 4);
+const view = new Float32Array(buffer);
+view.set(pcmData);
+const audioData = Array.from(new Uint8Array(buffer));
+
+// 4. 发送到API
+const response = await fetch('/api/recognize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        audioData: audioData,
+        appKey: 'your-app-key',
+        token: 'your-token',
+        format: 'pcm',
+        sampleRate: 16000
+    })
+});`
+                    },
+                    correctUsage: {
+                        description: '正确的音频数据发送格式',
+                        codeExample: `
+// 正确的调用方式
+const audioData = Array.from(new Uint8Array(audioBuffer)); // 必须是数组
+const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/recognize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        audioData: audioData,  // Array<number>
+        appKey: 'your-app-key',
+        token: 'your-token',
+        format: 'pcm',
+        sampleRate: 16000
+    })
+});`
+                    }
+                }
             });
         }
 
         // 验证音频数据不能为空
         if (audioData.length === 0) {
-            console.log('❌ 音频数据为空，请使用/api/get-token端点获取Token');
+            console.log('❌ 音频数据为空');
             return res.status(400).json({
                 success: false,
-                error: '音频数据不能为空，如需获取Token请使用/api/get-token端点'
+                error: '音频数据不能为空',
+                details: {
+                    received: 'empty array',
+                    expected: 'non-empty array with audio data'
+                },
+                suggestions: {
+                    checkRecording: '请确保录音功能正常工作，录制了有效的音频',
+                    checkConversion: '检查音频数据转换过程是否正确',
+                    minimumSize: '音频数据通常应该至少有几千字节'
+                },
+                endpoints: {
+                    getToken: '/api/get-token - 获取阿里云访问令牌',
+                    recognize: '/api/recognize - 语音识别（当前端点）'
+                }
             });
         }
 
