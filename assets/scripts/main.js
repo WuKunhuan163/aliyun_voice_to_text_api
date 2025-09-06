@@ -277,7 +277,7 @@ class VoiceRecognitionTester {
         
         console.log('浏览器检测结果:', { isChrome, isFirefox, isSafari, isEdge, userAgent });
         
-        let guide = '麦克风权限被拒绝，请按以下步骤设置：';
+        let guide = `浏览器信息：${userAgent.substring(0, 100)}... 检测结果：Chrome=${isChrome}, Firefox=${isFirefox}, Safari=${isSafari}, Edge=${isEdge}, 移动端=${isMobile}. 麦克风权限被拒绝，请按以下步骤设置：`;
         
         if (isChrome) {
             guide += 'Chrome浏览器设置：点击地址栏左侧的锁图标，找到麦克风选项并选择允许，然后刷新页面重新尝试。或者点击右上角菜单进入设置，选择隐私和安全-网站设置-麦克风，确保麦克风设置为允许并在允许列表中添加本网站。';
