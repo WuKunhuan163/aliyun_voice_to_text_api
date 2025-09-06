@@ -633,22 +633,97 @@ class VoiceRecognitionTester {
         // 可以在这里添加其他状态指示器的更新，但不改变主要结果显示
     }
 
-    downloadRecording() {
+    async downloadRecording() {
         if (!this.currentAudioBlob) {
             this.showStatus('没有录音数据可下载', 'error');
             return;
         }
 
-        const url = URL.createObjectURL(this.currentAudioBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `recording_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.webm`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        try {
+            // 显示转换状态
+            this.downloadButton.textContent = '转换中...';
+            this.downloadButton.disabled = true;
+            
+            // 将音频转换为WAV格式（浏览器原生不支持MP3编码）
+            const wavBlob = await this.convertToWav(this.currentAudioBlob);
+            
+            // 下载WAV文件（更兼容的音频格式）
+            const url = URL.createObjectURL(wavBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `recording_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.wav`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showStatus('WAV文件下载成功', 'success');
+        } catch (error) {
+            console.error('音频转换失败:', error);
+            this.showStatus('音频转换失败: ' + error.message, 'error');
+        } finally {
+            // 恢复按钮状态
+            this.downloadButton.textContent = '下载录音';
+            this.downloadButton.disabled = false;
+        }
+    }
+    
+    async convertToWav(audioBlob) {
+        // 使用Web Audio API将音频转换为WAV格式
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
         
-        this.showStatus('录音已下载', 'success');
+        // 转换为WAV格式
+        const wavBuffer = this.audioBufferToWav(audioBuffer);
+        
+        return new Blob([wavBuffer], { type: 'audio/wav' });
+    }
+    
+    audioBufferToWav(buffer) {
+        const length = buffer.length;
+        const numberOfChannels = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const bytesPerSample = 2; // 16-bit
+        const blockAlign = numberOfChannels * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = length * blockAlign;
+        
+        const arrayBuffer = new ArrayBuffer(44 + dataSize);
+        const view = new DataView(arrayBuffer);
+        
+        // WAV文件头
+        const writeString = (offset, string) => {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        };
+        
+        writeString(0, 'RIFF');
+        view.setUint32(4, 36 + dataSize, true);
+        writeString(8, 'WAVE');
+        writeString(12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numberOfChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, 16, true);
+        writeString(36, 'data');
+        view.setUint32(40, dataSize, true);
+        
+        // 音频数据
+        let offset = 44;
+        for (let i = 0; i < length; i++) {
+            for (let channel = 0; channel < numberOfChannels; channel++) {
+                const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                offset += 2;
+            }
+        }
+        
+        return arrayBuffer;
     }
 
     updateUI() {
