@@ -263,14 +263,6 @@ class VoiceRecognitionTester {
             }
             
             this.showStatus(errorMessage, 'error');
-            
-            // 如果是移动端，提供额外提示
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile) {
-                setTimeout(() => {
-                    this.showStatus('移动端提示: 请确保使用HTTPS访问，并在浏览器中允许麦克风权限。', 'warning');
-                }, 3000);
-            }
         }
     }
     
