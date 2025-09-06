@@ -134,7 +134,7 @@ async function callAliyunNLS(requestData) {
                 success: true,
                 result: result.result || result.text || result.transcript || result.content || '',
                 timestamp: Date.now(),
-                version: "DEBUG_INFO_TEST_v5.0",
+                version: "AUDIO_DEBUG_v6.0",
                 debug: "如果看到这个字段说明使用了最新代码",
                 aliyunApiResponse: {
                     status: result.status,
@@ -314,10 +314,15 @@ export default async function handler(req, res) {
             audioDataLength: audioData.length,
             audioDataType: typeof audioData,
             audioDataIsArray: Array.isArray(audioData),
+            audioDataFirst10: audioData.slice(0, 10),
+            audioDataLast10: audioData.slice(-10),
+            audioDataMin: Math.min(...audioData.slice(0, 100)),
+            audioDataMax: Math.max(...audioData.slice(0, 100)),
             appKey: appKey,
             format: format,
             sampleRate: sampleRate,
-            executionPath: "callAliyunNLS_executed"
+            executionPath: "callAliyunNLS_executed",
+            requestUrl: `https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr?appkey=${appKey}&token=${finalToken.substring(0,8)}...&format=${format}&sample_rate=${sampleRate}`
         };
 
         console.log('✅ [ROUTE] 识别结果:', recognitionResult.result);
@@ -327,7 +332,7 @@ export default async function handler(req, res) {
         console.error('📤📤📤 [CRITICAL] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
         
         // 强制添加测试字段确保部署生效
-        recognitionResult.testField = "DEPLOY_TEST_v5.0";
+        recognitionResult.testField = "AUDIO_DEBUG_v6.0";
         recognitionResult.forceDebug = "这个字段应该出现在响应中";
         
         // 返回格式与local_server版本一致
