@@ -77,11 +77,19 @@ async function callAliyunNLS(requestData) {
         const requestUrl = `${nlsUrl}?${params}`;
         
         console.log('🔗 调用阿里云NLS API:', requestUrl ? requestUrl.substring(0, 100) + '...' : 'undefined');
+        console.log('🔗 完整请求URL:', requestUrl);
+        console.log('🔍 请求参数详情:');
+        console.log('   appkey:', appKey);
+        console.log('   token:', token ? token.substring(0, 16) + '...' : 'undefined');
+        console.log('   format:', format);
+        console.log('   sample_rate:', sampleRate);
         
         // 将音频数据转换为Buffer - 与local_server版本完全相同
         const audioBuffer = Buffer.from(audioData);
         
         console.log('📊 发送音频数据大小:', audioBuffer.length, 'bytes');
+        console.log('📊 音频数据前10个字节:', audioBuffer.slice(0, 10));
+        console.log('📊 音频数据最后10个字节:', audioBuffer.slice(-10));
         
         // 发送POST请求到阿里云NLS API - 与local_server版本完全相同
         const response = await fetch(requestUrl, {
@@ -103,10 +111,14 @@ async function callAliyunNLS(requestData) {
         
         const responseText = await response.text();
         console.log('📄 阿里云API原始响应:', responseText);
+        console.log('📄 响应文本长度:', responseText.length);
+        console.log('📄 响应前100个字符:', responseText.substring(0, 100));
         
         // 解析响应 - 与local_server版本完全相同
         const result = JSON.parse(responseText);
         console.log('🔍 解析后的结果对象:', JSON.stringify(result, null, 2));
+        console.log('🔍 结果状态码:', result.status);
+        console.log('🔍 结果消息:', result.message || 'N/A');
         
         if (result.status === 20000000) {
             // 识别成功 - 与local_server版本完全相同
