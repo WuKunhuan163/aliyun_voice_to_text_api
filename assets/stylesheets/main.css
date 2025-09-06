@@ -275,9 +275,7 @@ h1 {
 }
 
 .transcription-textarea.success {
-    background: #c6f6d5;
-    border-color: #38a169;
-    color: #22543d;
+    border-color: #10b981; /* 只改变边框颜色为绿色 */
 }
 
 .transcription-textarea.warning {
@@ -298,7 +296,7 @@ h1 {
 .action-button, .record-button, .download-button, .demo-button {
     color: white;
     border: none;
-    padding: 14px 28px;
+    padding: 10px;
     border-radius: 12px;
     font-size: 1rem;
     font-weight: 500;

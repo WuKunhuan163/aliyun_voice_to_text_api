@@ -135,7 +135,7 @@ class VoiceRecognitionTester {
             this.transcriptionResult.innerHTML = '正在获取Token，请稍候...';
             this.transcriptionResult.className = "transcription-textarea processing";
         } else {
-            this.transcriptionResult.innerHTML = '配置完成！点击"开始录音"按钮开始语音识别';
+            this.transcriptionResult.innerHTML = '配置完成！点击"开始录音"开始语音识别';
             this.transcriptionResult.className = "transcription-textarea success";
         }
     }
@@ -535,17 +535,17 @@ class VoiceRecognitionTester {
                 console.log('✅ 识别成功！文本内容:', `"${recognizedText}"`);
                 console.log('📝 文本长度:', recognizedText.length);
                 
-                // 立即显示识别结果到文本框 - 使用指定格式
+                // 立即显示识别结果到文本框 - 保持框子形状，只改变边框颜色
                 if (recognizedText) {
                     this.transcriptionResult.textContent = `${recognizedText}`;
-                    this.transcriptionResult.className = "transcription-result success";
+                    this.transcriptionResult.className = "transcription-textarea success";
                     this.showResultStatus('识别成功', 'success');
                     
                     // 显示示例HTML按钮
                     this.demoHtmlButton.style.display = 'inline-block';
                 } else {
                     this.transcriptionResult.textContent = '未识别到内容，请重试';
-                    this.transcriptionResult.className = "transcription-result warning";
+                    this.transcriptionResult.className = "transcription-textarea warning";
                     this.showResultStatus('未识别到内容', 'warning');
                 }
                 
