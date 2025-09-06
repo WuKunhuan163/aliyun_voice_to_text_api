@@ -51,26 +51,18 @@ class VoiceRecognitionTester {
 
     initMiniWaveform() {
         this.waveformData = [];
-        this.audioData = [];
+        this.currentAmplitude = 0;
         this.recordingStartTime = null;
         
         // 清空SVG波形条
-        this.waveformBars.innerHTML = '';
-        
-        // 初始化100个波形条（更多的条数以获得更精细的显示）
-        for (let i = 0; i < 100; i++) {
-            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            rect.setAttribute('x', i * 10);
-            rect.setAttribute('y', 15);
-            rect.setAttribute('width', '8');
-            rect.setAttribute('height', '0');
-            rect.setAttribute('fill', '#667eea');
-            rect.setAttribute('opacity', '0.7');
-            this.waveformBars.appendChild(rect);
+        if (this.waveformBars) {
+            this.waveformBars.innerHTML = '';
         }
         
         // 重置进度遮罩
-        this.waveformProgressMask.setAttribute('width', '0');
+        if (this.waveformProgressMask) {
+            this.waveformProgressMask.setAttribute('width', '0');
+        }
     }
 
     bindEvents() {
@@ -265,9 +257,13 @@ class VoiceRecognitionTester {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         this.analyser = this.audioContext.createAnalyser();
         this.analyser.fftSize = 256;
+        this.analyser.smoothingTimeConstant = 0.3;
         
         const source = this.audioContext.createMediaStreamSource(stream);
         source.connect(this.analyser);
+        
+        // 初始化频域数据缓冲区
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
     }
 
     setupMediaRecorder(stream) {
@@ -319,22 +315,77 @@ class VoiceRecognitionTester {
     }
 
     updateMiniWaveform() {
-        if (!this.waveformBars || !this.waveformBars.children) return;
+        if (!this.analyser || !this.dataArray) return;
         
-        // 模拟音频峰值
-        const amplitude = this.currentAmplitude || Math.random() * 0.8 + 0.1;
+        // 获取实时音频频域数据
+        this.analyser.getByteFrequencyData(this.dataArray);
         
-        // 更新SVG波形条
-        const bars = this.waveformBars.children;
-        for (let i = 0; i < bars.length; i++) {
-            const bar = bars[i];
-            const randomHeight = Math.random() * amplitude * 25 + 2; // 高度范围2-27px
-            const y = 15 - randomHeight / 2;
-            
-            bar.setAttribute('height', randomHeight);
-            bar.setAttribute('y', y);
-            bar.setAttribute('opacity', '0.8');
+        // 计算音频振幅 (取低频部分的平均值)
+        let sum = 0;
+        const sampleSize = Math.min(32, this.dataArray.length); // 只取前32个频率段
+        for (let i = 0; i < sampleSize; i++) {
+            sum += this.dataArray[i];
         }
+        const averageAmplitude = sum / sampleSize / 255; // 归一化到0-1
+        
+        // 转换为峰图高度 (1-25px)
+        const height = Math.min(25, Math.max(1, averageAmplitude * 100));
+        
+        // 添加到波形数据
+        this.waveformData.push(height);
+        
+        // 限制数据长度 (30秒 * 10次/秒 = 300个数据点)
+        if (this.waveformData.length > 300) {
+            this.waveformData.shift();
+        }
+        
+        // 渲染波形SVG
+        this.renderWaveformSVG();
+        
+        // 更新进度遮罩
+        this.updateWaveformProgress();
+    }
+    
+    renderWaveformSVG() {
+        if (!this.waveformBars) return;
+        
+        // 清空现有的峰值条
+        this.waveformBars.innerHTML = '';
+        
+        // 计算当前应该显示多少个条
+        const elapsed = Date.now() - this.recordingStartTime;
+        const totalBarsToShow = Math.min(100, Math.floor(elapsed / 100)); // 每100ms一个条，最多100个
+        const barWidth = 1000 / 100; // SVG宽度1000，100个条
+        
+        // 从数据的末尾开始显示
+        const startIndex = Math.max(0, this.waveformData.length - totalBarsToShow);
+        for (let i = 0; i < totalBarsToShow && i < this.waveformData.length; i++) {
+            const dataIndex = startIndex + i;
+            if (dataIndex < this.waveformData.length) {
+                const height = this.waveformData[dataIndex];
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('class', 'waveform-bar');
+                rect.setAttribute('x', i * barWidth);
+                rect.setAttribute('y', 30 - height); // 从底部开始
+                rect.setAttribute('width', barWidth * 0.8); // 留一点间隙
+                rect.setAttribute('height', height);
+                rect.setAttribute('fill', '#667eea');
+                rect.setAttribute('opacity', '0.7');
+                this.waveformBars.appendChild(rect);
+            }
+        }
+    }
+    
+    updateWaveformProgress() {
+        if (!this.waveformProgressMask || !this.isRecording) return;
+        
+        // 计算进度百分比
+        const elapsed = Date.now() - this.recordingStartTime;
+        const progress = Math.min((elapsed / 30000) * 100, 100); // 30秒最大
+        const progressWidth = (progress / 100) * 1000; // SVG宽度1000
+        
+        // 更新进度遮罩
+        this.waveformProgressMask.setAttribute('width', progressWidth);
     }
 
     stopRecording() {
@@ -351,6 +402,14 @@ class VoiceRecognitionTester {
             clearInterval(this.waveformTimer);
             this.waveformTimer = null;
         }
+        
+        // 清理音频分析资源
+        if (this.audioContext) {
+            this.audioContext.close();
+            this.audioContext = null;
+        }
+        this.analyser = null;
+        this.dataArray = null;
 
         // 停止所有音频轨道
         if (this.mediaRecorder && this.mediaRecorder.stream) {
