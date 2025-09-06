@@ -134,7 +134,7 @@ async function callAliyunNLS(requestData) {
                 success: true,
                 result: result.result || result.text || result.transcript || result.content || '',
                 timestamp: Date.now(),
-                version: "CRITICAL_LOG_TEST_v4.0",
+                version: "DEBUG_INFO_TEST_v5.0",
                 debug: "如果看到这个字段说明使用了最新代码",
                 aliyunApiResponse: {
                     status: result.status,
@@ -325,6 +325,10 @@ export default async function handler(req, res) {
         
         // 强制显示返回结果
         console.error('📤📤📤 [CRITICAL] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
+        
+        // 强制添加测试字段确保部署生效
+        recognitionResult.testField = "DEPLOY_TEST_v5.0";
+        recognitionResult.forceDebug = "这个字段应该出现在响应中";
         
         // 返回格式与local_server版本一致
         return res.json(recognitionResult);
