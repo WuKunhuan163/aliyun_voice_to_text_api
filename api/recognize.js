@@ -174,8 +174,8 @@ async function callAliyunNLS(requestData) {
                 success: true,
                 result: result.result || result.text || result.transcript || result.content || '',
                 timestamp: Date.now(),
-                version: "AUDIO_DEBUG_v6.0",
-                debug: "如果看到这个字段说明使用了最新代码",
+                version: "AUDIO_DEBUG_v7.1_UPDATED",
+                debug: "v7.1更新：修复音频格式和版本标识",
                 aliyunApiResponse: {
                     status: result.status,
                     message: result.message || 'N/A',
