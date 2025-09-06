@@ -198,15 +198,32 @@ class VoiceRecognitionTester {
             if (!this.validateConfig()) {
                 return;
             }
+            
+            // 预检查麦克风权限状态
+            await this.checkMicrophonePermission();
 
-            const stream = await navigator.mediaDevices.getUserMedia({ 
+            // 手机端兼容的音频配置
+            let audioConstraints = {
                 audio: {
-                    sampleRate: 16000,
-                    channelCount: 1,
                     echoCancellation: true,
-                    noiseSuppression: true
-                } 
-            });
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            };
+            
+            // 检查是否是移动设备
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            if (!isMobile) {
+                // 桌面端可以使用更具体的配置
+                audioConstraints.audio.sampleRate = 16000;
+                audioConstraints.audio.channelCount = 1;
+            }
+            
+            console.log('🎤 检测设备类型:', isMobile ? '移动端' : '桌面端');
+            console.log('🔧 音频配置:', audioConstraints);
+            
+            const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
 
             this.setupAudioContext(stream);
             this.setupMediaRecorder(stream);
@@ -229,7 +246,52 @@ class VoiceRecognitionTester {
 
         } catch (error) {
             console.error('录音启动失败:', error);
-            this.showStatus('录音启动失败: ' + error.message, 'error');
+            
+            // 针对不同错误提供具体的解决建议
+            let errorMessage = '录音启动失败: ';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage += '麦克风权限被拒绝。请在浏览器设置中允许麦克风访问权限。';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += '未找到麦克风设备。请确保设备已连接麦克风。';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage += '浏览器不支持录音功能。请使用Chrome、Firefox或Safari浏览器。';
+            } else if (error.name === 'SecurityError') {
+                errorMessage += '安全限制。请确保使用HTTPS访问或在localhost测试。';
+            } else {
+                errorMessage += error.message;
+            }
+            
+            this.showStatus(errorMessage, 'error');
+            
+            // 如果是移动端，提供额外提示
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile) {
+                setTimeout(() => {
+                    this.showStatus('移动端提示: 请确保使用HTTPS访问，并在浏览器中允许麦克风权限。', 'warning');
+                }, 3000);
+            }
+        }
+    }
+    
+    async checkMicrophonePermission() {
+        // 检查浏览器是否支持权限API
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+                console.log('🎤 麦克风权限状态:', permissionStatus.state);
+                
+                if (permissionStatus.state === 'denied') {
+                    throw new Error('麦克风权限已被永久拒绝，请在浏览器设置中手动允许');
+                }
+            } catch (error) {
+                console.log('⚠️ 权限检查失败，继续尝试录音:', error.message);
+            }
+        }
+        
+        // 检查是否支持getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('浏览器不支持录音功能');
         }
     }
 
