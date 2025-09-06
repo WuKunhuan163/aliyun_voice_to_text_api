@@ -156,6 +156,11 @@ async function callAliyunNLS(requestData) {
  * Vercel Function 主函数 - 基于local_server的实现
  */
 export default async function handler(req, res) {
+    // 强制显示日志 - 即使是错误也要显示
+    console.error('🚀🚀🚀 [CRITICAL] recognize.js handler 开始执行 🚀🚀🚀');
+    console.error('🚀🚀🚀 [CRITICAL] 请求方法:', req.method);
+    console.error('🚀🚀🚀 [CRITICAL] 请求时间:', new Date().toISOString());
+    
     console.log('🚀 [ROUTE] recognize.js handler 开始执行');
     console.log('🚀 [ROUTE] 请求方法:', req.method);
     console.log('🚀 [ROUTE] 请求时间:', new Date().toISOString());
@@ -295,6 +300,9 @@ export default async function handler(req, res) {
 
         console.log('✅ [ROUTE] 识别结果:', recognitionResult.result);
         console.log('📤 [ROUTE] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
+        
+        // 强制显示返回结果
+        console.error('📤📤📤 [CRITICAL] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
         
         // 返回格式与local_server版本一致
         return res.json(recognitionResult);
