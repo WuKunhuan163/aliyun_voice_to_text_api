@@ -487,7 +487,7 @@ h1 {
 .progress-fill-thin {
     height: 100%;
     width: 0;
-    background: linear-gradient(90deg, #667eea, #764ba2);
+    background: linear-gradient(90deg, #ffc107, #fd7e14);
     transition: width 0.3s ease;
 }
 

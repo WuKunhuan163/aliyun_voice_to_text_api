@@ -201,6 +201,16 @@ class VoiceRecognitionTester {
             
             // 预检查麦克风权限状态
             await this.checkMicrophonePermission();
+            
+            // 开始新录音前清空之前的显示和波形
+            this.transcriptionResult.textContent = '';
+            this.transcriptionResult.classList.remove('has-content');
+            this.downloadButton.style.display = 'none';
+            this.demoHtmlButton.style.display = 'none';
+            if (this.progressFill) {
+                this.progressFill.style.width = '0%';
+            }
+            this.initMiniWaveform();
 
             // 手机端兼容的音频配置
             let audioConstraints = {
@@ -448,14 +458,13 @@ class VoiceRecognitionTester {
         // 清空现有的峰值条
         this.waveformBars.innerHTML = '';
         
-        // 计算当前应该显示多少个条
-        const elapsed = Date.now() - this.recordingStartTime;
-        const totalBarsToShow = Math.min(100, Math.floor(elapsed / 100)); // 每100ms一个条，最多100个
+        // 显示所有已有的波形数据，但最多100个条
+        const totalBarsToShow = Math.min(100, this.waveformData.length);
         const barWidth = 1000 / 100; // SVG宽度1000，100个条
         
         // 从数据的末尾开始显示
         const startIndex = Math.max(0, this.waveformData.length - totalBarsToShow);
-        for (let i = 0; i < totalBarsToShow && i < this.waveformData.length; i++) {
+        for (let i = 0; i < totalBarsToShow; i++) {
             const dataIndex = startIndex + i;
             if (dataIndex < this.waveformData.length) {
                 const height = this.waveformData[dataIndex];
@@ -843,16 +852,8 @@ class VoiceRecognitionTester {
             this.recordButton.textContent = '开始录音';
             this.recordButton.classList.remove('recording');
             
-            // 重置所有显示
-            this.transcriptionResult.textContent = '';
-            this.transcriptionResult.classList.remove('has-content');
-            this.downloadButton.style.display = 'none';
-            
-            // 重置进度条
-            if (this.progressFill) {
-                this.progressFill.style.width = '0%';
-            }
-            this.initMiniWaveform();
+            // 只有在真正需要重置时才清空显示（比如开始新录音前）
+            // 识别完成后不清空，保持波形显示
         }
     }
 
