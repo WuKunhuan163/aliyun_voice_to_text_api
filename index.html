@@ -49,16 +49,33 @@
             </div>
         </div>
 
-        <!-- 转录结果显示区域 -->
+        <!-- 转录结果显示区域 - 模仿local_server设计 -->
         <div class="transcription-section">
-            <div class="transcription-progress" id="transcriptionProgress">
-                <div class="progress-bar" id="progressBar"></div>
-                <div class="waveform-mini" id="waveformMini">
-                    <!-- 波形条将由JavaScript动态生成 -->
+            <div class="transcription-container">
+                <!-- 细细的进度条在转录框内部顶端 -->
+                <div class="progress-container-thin" id="transcriptionProgress">
+                    <div class="progress-bar-thin" id="progressBarThin">
+                        <div class="progress-fill-thin" id="progressFill"></div>
+                    </div>
+                </div>
+                
+                <!-- 音轨峰图 -->
+                <div class="waveform-container" id="waveformContainer">
+                    <svg class="waveform-svg" id="waveformSvg" width="100%" height="30" viewBox="0 0 1000 30" preserveAspectRatio="none">
+                        <!-- 背景 -->
+                        <rect class="waveform-background" x="0" y="0" width="1000" height="30" />
+                        <!-- 峰值区域将动态生成 -->
+                        <g id="waveformBars"></g>
+                        <!-- 进度遮罩 -->
+                        <rect class="waveform-progress-mask" id="waveformProgressMask" x="0" y="0" width="0" height="30" />
+                    </svg>
+                </div>
+                
+                <div id="transcriptionResult" class="transcription-result" 
+                     data-placeholder="请先配置阿里云密钥信息...">
+                    <!-- 初始为空，识别结果将显示在这里 -->
                 </div>
             </div>
-            <div id="transcriptionResult" class="transcription-textarea" 
-                 data-placeholder="请先配置阿里云密钥信息..."></div>
         </div>
 
         <!-- 录音测试区域 -->

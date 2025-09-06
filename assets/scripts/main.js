@@ -28,10 +28,13 @@ class VoiceRecognitionTester {
         this.downloadButton = document.getElementById('downloadButton');
         this.transcriptionResult = document.getElementById('transcriptionResult');
         
-        // 新的进度条和波形图元素
+        // 新的进度条和波形图元素 - 适配新的HTML结构
         this.transcriptionProgress = document.getElementById('transcriptionProgress');
-        this.progressBar = document.getElementById('progressBar');
-        this.waveformMini = document.getElementById('waveformMini');
+        this.progressFill = document.getElementById('progressFill');
+        this.waveformContainer = document.getElementById('waveformContainer');
+        this.waveformSvg = document.getElementById('waveformSvg');
+        this.waveformBars = document.getElementById('waveformBars');
+        this.waveformProgressMask = document.getElementById('waveformProgressMask');
         
         // 配置输入框 - 使用正确的API地址
         this.apiUrl = { value: 'https://aliyun-voice-to-text-api.vercel.app/api/recognize' };
@@ -47,16 +50,26 @@ class VoiceRecognitionTester {
 
     initMiniWaveform() {
         this.waveformData = [];
-        this.waveformBars = [];
+        this.audioData = [];
+        this.recordingStartTime = null;
         
-        // 创建50个波形条
-        this.waveformMini.innerHTML = '';
-        for (let i = 0; i < 50; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'waveform-bar';
-            this.waveformMini.appendChild(bar);
-            this.waveformBars.push(bar);
+        // 清空SVG波形条
+        this.waveformBars.innerHTML = '';
+        
+        // 初始化100个波形条（更多的条数以获得更精细的显示）
+        for (let i = 0; i < 100; i++) {
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', i * 10);
+            rect.setAttribute('y', 15);
+            rect.setAttribute('width', '8');
+            rect.setAttribute('height', '0');
+            rect.setAttribute('fill', '#667eea');
+            rect.setAttribute('opacity', '0.7');
+            this.waveformBars.appendChild(rect);
         }
+        
+        // 重置进度遮罩
+        this.waveformProgressMask.setAttribute('width', '0');
     }
 
     bindEvents() {
@@ -507,14 +520,19 @@ class VoiceRecognitionTester {
                 console.log('✅ 识别成功！文本内容:', `"${recognizedText}"`);
                 console.log('📝 文本长度:', recognizedText.length);
                 
-                // 延迟清除进度条并显示结果
-                setTimeout(() => {
-                    if (recognizedText) {
-                        this.transcriptionResult.textContent = recognizedText;
-                        this.transcriptionResult.classList.add('has-content');
-                    }
-                    this.showResultStatus(recognizedText);
-                }, 1000);
+                // 立即显示识别结果到文本框
+                if (recognizedText) {
+                    this.transcriptionResult.textContent = recognizedText;
+                    this.transcriptionResult.className = "transcription-textarea success";
+                    this.showResultStatus('识别成功', 'success');
+                } else {
+                    this.transcriptionResult.textContent = '未识别到内容，请重试';
+                    this.transcriptionResult.className = "transcription-textarea warning";
+                    this.showResultStatus('未识别到内容', 'warning');
+                }
+                
+                // 隐藏进度条
+                this.transcriptionProgress.style.display = 'none';
                 
             } else {
                 console.error('❌ 识别失败:', result.error);
