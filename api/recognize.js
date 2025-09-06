@@ -128,7 +128,7 @@ async function callAliyunNLS(requestData) {
                 success: true,
                 result: result.result || result.text || result.transcript || result.content || '',
                 timestamp: Date.now(),
-                version: "AUDIO_DEBUG_v7.1_UPDATED",
+                version: "AUDIO_DEBUG_v7.2_FINAL",
                 aliyunApiResponse: {
                     status: result.status,
                     message: result.message || 'N/A',
@@ -179,7 +179,7 @@ export default async function handler(req, res) {
         });
     }
 
-    console.log('🔍 [ROUTE] 收到语音识别请求 - 使用最新的recognize.js v3.0');
+    console.log('🔍 [ROUTE] 收到语音识别请求 - 使用最新的recognize.js v7.2_FINAL');
     console.log('📋 [ROUTE] 请求详情:', {
         method: req.method,
         body: req.body ? Object.keys(req.body) : 'no body',
@@ -417,8 +417,8 @@ const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/re
         console.error('📤📤📤 [CRITICAL] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
         
         // 强制添加测试字段确保部署生效
-        recognitionResult.testField = "AUDIO_DEBUG_v7.1_UPDATED";
-        recognitionResult.forceDebug = "v7.1更新：修复音频格式问题";
+        recognitionResult.testField = "AUDIO_DEBUG_v7.2_FINAL";
+        recognitionResult.forceDebug = "v7.2最终版：清理旧代码，确保音频重采样正常工作";
         recognitionResult.updateTimestamp = new Date().toISOString();
         
         // 返回格式与local_server版本一致
