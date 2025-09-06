@@ -396,8 +396,9 @@ class VoiceRecognitionTester {
             
             this.showStatus('正在调用API进行语音识别...', 'processing');
             
-            // 与local_server版本完全一致的请求体格式
+            // 与local_server版本完全一致的请求体格式 - 包含Token
             const requestBody = {
+                token: this.currentToken, // 传递已获取的Token
                 audioData: audioByteArray, // 发送字节数组
                 appKey: this.appKey.value,
                 accessKeyId: this.accessKeyId.value,
