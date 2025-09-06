@@ -485,6 +485,23 @@ h1 {
     fill: rgba(102, 126, 234, 0.2);
 }
 
+/* 波形状态颜色 - 模仿local_server */
+.transcription-container.processing .waveform-background {
+    fill: rgba(0, 123, 255, 0.05);
+}
+
+.transcription-container.processing .waveform-progress-mask {
+    fill: rgba(0, 123, 255, 0.15);
+}
+
+.transcription-container.completed .waveform-background {
+    fill: rgba(40, 167, 69, 0.1);
+}
+
+.transcription-container.completed .waveform-progress-mask {
+    fill: rgba(40, 167, 69, 0.3);
+}
+
 /* 转录结果文本区域 */
 .transcription-result {
     padding: 15px;

@@ -312,6 +312,9 @@ class VoiceRecognitionTester {
         if (this.progressFill) {
             this.progressFill.style.width = progress + '%';
         }
+        
+        // 同步更新波形进度遮罩
+        this.updateWaveformProgress();
     }
 
     updateMiniWaveform() {
@@ -341,9 +344,6 @@ class VoiceRecognitionTester {
         
         // 渲染波形SVG
         this.renderWaveformSVG();
-        
-        // 更新进度遮罩
-        this.updateWaveformProgress();
     }
     
     renderWaveformSVG() {
@@ -379,9 +379,9 @@ class VoiceRecognitionTester {
     updateWaveformProgress() {
         if (!this.waveformProgressMask || !this.isRecording) return;
         
-        // 计算进度百分比
+        // 使用与进度条完全相同的进度计算
         const elapsed = Date.now() - this.recordingStartTime;
-        const progress = Math.min((elapsed / 30000) * 100, 100); // 30秒最大
+        const progress = Math.min((elapsed / (30 * 1000)) * 100, 100);
         const progressWidth = (progress / 100) * 1000; // SVG宽度1000
         
         // 更新进度遮罩
@@ -556,6 +556,13 @@ class VoiceRecognitionTester {
             console.log('🔐 AppKey:', this.appKey.value);
             console.log('🔑 AccessKeyId:', this.accessKeyId.value);
             
+            // 设置识别处理状态 - 不清除波形，改变颜色
+            const transcriptionContainer = document.querySelector('.transcription-container');
+            if (transcriptionContainer) {
+                transcriptionContainer.classList.add('processing');
+                transcriptionContainer.classList.remove('completed');
+            }
+            
             this.showStatus('正在调用API进行语音识别...', 'processing');
             
             // 与local_server版本完全一致的请求体格式 - 包含Token
@@ -606,6 +613,13 @@ class VoiceRecognitionTester {
                     this.transcriptionResult.textContent = '未识别到内容，请重试';
                     this.transcriptionResult.className = "transcription-textarea warning";
                     this.showResultStatus('未识别到内容', 'warning');
+                }
+                
+                // 设置识别完成状态 - 波形变为绿色
+                const transcriptionContainer = document.querySelector('.transcription-container');
+                if (transcriptionContainer) {
+                    transcriptionContainer.classList.remove('processing');
+                    transcriptionContainer.classList.add('completed');
                 }
                 
                 // 隐藏进度条
