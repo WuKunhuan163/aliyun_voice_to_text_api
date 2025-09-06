@@ -537,14 +537,14 @@ class VoiceRecognitionTester {
                 
                 // 立即显示识别结果到文本框 - 使用指定格式
                 if (recognizedText) {
-                    this.transcriptionResult.textContent = `识别结果：「${recognizedText}」`;
+                    this.transcriptionResult.textContent = `${recognizedText}`;
                     this.transcriptionResult.className = "transcription-result success";
                     this.showResultStatus('识别成功', 'success');
                     
                     // 显示示例HTML按钮
                     this.demoHtmlButton.style.display = 'inline-block';
                 } else {
-                    this.transcriptionResult.textContent = '识别结果：「未识别到内容，请重试」';
+                    this.transcriptionResult.textContent = '未识别到内容，请重试';
                     this.transcriptionResult.className = "transcription-result warning";
                     this.showResultStatus('未识别到内容', 'warning');
                 }
@@ -636,7 +636,7 @@ class VoiceRecognitionTester {
             '<html lang="zh-CN">' +
             '<head>' +
             '<meta charset="UTF-8">' +
-            '<title>语音识别示例</title>' +
+            '<title>语音识别</title>' +
             '<style>' +
             'body{font-family:Arial,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;color:white;margin:0}' +
             '.container{text-align:center;padding:40px}' +
@@ -652,11 +652,10 @@ class VoiceRecognitionTester {
             '</head>' +
             '<body>' +
             '<div class="container">' +
-            '<h1 class="title">语音识别示例</h1>' +
+            '<h1 class="title">语音识别</h1>' +
             '<button id="recordButton" class="record-button">开始录音</button>' +
             '<div id="countdown" class="countdown"></div>' +
             '<div id="result" class="result"></div>' +
-            '<div class="hint">录音时可按任意键结束</div>' +
             '</div>' +
             '<script>' +
             'class SimpleVoiceRecognizer{' +
@@ -727,7 +726,7 @@ class VoiceRecognitionTester {
             'body:JSON.stringify({token:this.token,audioData,appKey:this.appKey,accessKeyId:this.accessKeyId,accessKeySecret:this.accessKeySecret,format:"pcm",sampleRate:16000})' +
             '});' +
             'const result=await res.json();' +
-            'this.result.textContent=result.success&&result.result?"识别结果：「"+result.result+"」":"识别结果：「未识别到内容」";' +
+            'this.result.textContent=result.success&&result.result?""+result.result+"":"未识别到内容";' +
             'this.result.style.display="block"' +
             '}catch(e){' +
             'this.result.textContent="识别失败，请重试";' +
@@ -769,7 +768,7 @@ class VoiceRecognitionTester {
 
         // 避免使用模板字符串的下载文件名
         const today = new Date().toISOString().slice(0, 10);
-        const fileName = '语音识别示例_' + today + '.html';
+        const fileName = '语音识别.html';
 
         // 下载HTML文件
         const blob = new Blob([demoHtml], { type: 'text/html' });

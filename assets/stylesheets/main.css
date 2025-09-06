@@ -495,8 +495,9 @@ h1 {
 }
 
 .transcription-result.success {
-    background: #c6f6d5;
-    color: #22543d;
+    background: #ffffff;
+    color: #374151;
+    border: 2px solid #10b981;
 }
 
 .transcription-result.warning {
