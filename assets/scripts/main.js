@@ -146,14 +146,13 @@ class VoiceRecognitionTester {
             this.showStatus('正在获取Token...', 'processing');
             this.recordButton.disabled = true;
 
-            // 现在使用统一的recognize API获取token（传递空音频数据）
-            const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/recognize', {
+            // 使用专门的get-token端点，语义更明确
+            const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/get-token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    audioData: [], // 空数组表示只获取token
                     appKey,
                     accessKeyId,
                     accessKeySecret

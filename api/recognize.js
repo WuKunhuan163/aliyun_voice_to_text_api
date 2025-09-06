@@ -217,34 +217,12 @@ export default async function handler(req, res) {
             });
         }
 
-        // 如果audioData为空数组，表示只获取token
+        // 验证音频数据不能为空
         if (audioData.length === 0) {
-            console.log('🔑 检测到空音频数据，只获取Token');
-            
-            if (!accessKeyId || !accessKeySecret) {
-                console.log('❌ 获取Token需要AccessKey信息');
-                return res.status(400).json({
-                    success: false,
-                    error: '获取Token需要AccessKey信息'
-                });
-            }
-            
-            console.log('🔄 正在获取阿里云访问令牌...');
-            const tokenResult = await getAliyunToken(accessKeyId, accessKeySecret);
-            
-            if (!tokenResult.success) {
-                console.log(`❌ Token获取失败: ${tokenResult.error}`);
-                return res.status(401).json({
-                    success: false,
-                    error: `获取访问令牌失败: ${tokenResult.error}`
-                });
-            }
-            
-            console.log('✅ Token获取成功，返回给前端');
-            return res.json({
-                success: true,
-                token: tokenResult.token,
-                tokenExpireTime: tokenResult.expireTime
+            console.log('❌ 音频数据为空，请使用/api/get-token端点获取Token');
+            return res.status(400).json({
+                success: false,
+                error: '音频数据不能为空，如需获取Token请使用/api/get-token端点'
             });
         }
 
