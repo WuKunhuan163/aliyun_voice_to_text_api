@@ -133,7 +133,9 @@ async function callAliyunNLS(requestData) {
             return {
                 success: true,
                 result: result.result || result.text || result.transcript || result.content || '',
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                version: "CRITICAL_LOG_TEST_v4.0",
+                debug: "如果看到这个字段说明使用了最新代码"
             };
         } else {
             // 识别失败
