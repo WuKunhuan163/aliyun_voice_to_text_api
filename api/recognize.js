@@ -1,4 +1,4 @@
-// 阿里云语音识别API - 基于local_server的正确实现
+// 阿里云语音识别API - 基于local_server的正确实现 (Updated)
 const { RPCClient } = require('@alicloud/pop-core');
 
 /**
