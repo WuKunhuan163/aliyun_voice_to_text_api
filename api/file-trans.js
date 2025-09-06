@@ -6,7 +6,7 @@ const Client = require('@alicloud/nls-filetrans-2018-08-17');
  */
 async function fileTrans(akID, akSecret, appKey, fileLink) {
     console.log('🚀 开始文件转录任务');
-    console.log(`   AccessKeyId: ${akID.substring(0, 8)}...`);
+    console.log(`   AccessKeyId: ${akID ? akID.substring(0, 8) + '...' : 'undefined'}`);
     console.log(`   AppKey: ${appKey}`);
     console.log(`   FileLink: ${fileLink}`);
     

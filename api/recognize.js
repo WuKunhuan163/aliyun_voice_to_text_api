@@ -76,7 +76,7 @@ async function callAliyunNLS(requestData) {
         
         const requestUrl = `${nlsUrl}?${params}`;
         
-        console.log('🔗 调用阿里云NLS API:', requestUrl.substring(0, 100) + '...');
+        console.log('🔗 调用阿里云NLS API:', requestUrl ? requestUrl.substring(0, 100) + '...' : 'undefined');
         
         // 将音频数据转换为Buffer - 与local_server版本完全相同
         const audioBuffer = Buffer.from(audioData);
@@ -163,7 +163,7 @@ export default async function handler(req, res) {
         });
     }
 
-    console.log('🔍 收到语音识别请求');
+    console.log('🔍 收到语音识别请求 - 使用最新的recognize.js v2.0');
     console.log('收到语音识别请求:', {
         method: req.method,
         body: req.body ? Object.keys(req.body) : 'no body',
