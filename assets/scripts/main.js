@@ -634,6 +634,181 @@ class VoiceRecognitionTester {
         this.transcriptionResult.textContent = message;
         this.transcriptionResult.className = `transcription-textarea ${type}`;
     }
+
+    // 生成示例HTML页面
+    generateDemoHtml() {
+        const appKey = this.appKey.value;
+        const accessKeyId = this.accessKeyId.value;
+        const accessKeySecret = this.accessKeySecret.value;
+        
+        if (!appKey || !accessKeyId || !accessKeySecret) {
+            alert('请先完整配置阿里云密钥信息');
+            return;
+        }
+
+        const demoHtml = \`<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音识别示例</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; color: white;
+        }
+        .container { text-align: center; max-width: 800px; width: 90%; padding: 40px; }
+        .title { font-size: 3em; margin-bottom: 40px; text-shadow: 0 4px 8px rgba(0,0,0,0.3); font-weight: 300; }
+        .record-button {
+            background: rgba(255, 255, 255, 0.15); border: 3px solid rgba(255, 255, 255, 0.8); color: white;
+            font-size: 1.8em; padding: 25px 50px; border-radius: 60px; cursor: pointer;
+            transition: all 0.4s ease; backdrop-filter: blur(20px); min-width: 400px; margin: 30px 0;
+        }
+        .record-button:hover { background: rgba(255, 255, 255, 0.25); transform: scale(1.05); }
+        .record-button.recording { background: rgba(255, 59, 48, 0.3); border-color: #ff6b6b; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+        .countdown { font-size: 1.4em; margin: 20px 0; opacity: 0.9; min-height: 40px; }
+        .result { margin-top: 40px; padding: 30px; background: rgba(255, 255, 255, 0.1); border-radius: 20px;
+                 backdrop-filter: blur(20px); font-size: 1.4em; min-height: 80px; display: none; }
+        .hint { margin-top: 30px; font-size: 1.1em; opacity: 0.7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">语音识别示例</h1>
+        <button id="recordButton" class="record-button">开始录音</button>
+        <div id="countdown" class="countdown"></div>
+        <div id="result" class="result"></div>
+        <div class="hint">录音时可按任意键结束</div>
+    </div>
+    <script>
+        class SimpleVoiceRecognizer {
+            constructor() {
+                this.appKey = '\${appKey}';
+                this.accessKeyId = '\${accessKeyId}';
+                this.accessKeySecret = '\${accessKeySecret}';
+                this.apiUrl = 'https://aliyun-voice-to-text-api.vercel.app/api/recognize';
+                this.init();
+            }
+            init() {
+                this.recordButton = document.getElementById('recordButton');
+                this.countdown = document.getElementById('countdown');
+                this.result = document.getElementById('result');
+                this.recordButton.onclick = () => this.isRecording ? this.stop() : this.start();
+                document.onkeydown = () => this.isRecording && this.stop();
+                this.getToken();
+            }
+            async getToken() {
+                try {
+                    const res = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/get-token', {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({appKey: this.appKey, accessKeyId: this.accessKeyId, accessKeySecret: this.accessKeySecret})
+                    });
+                    const result = await res.json();
+                    this.token = result.success ? result.token : null;
+                } catch(e) { console.error('Token获取失败:', e); }
+            }
+            async start() {
+                if (!this.token) return alert('Token未准备就绪');
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({audio: {sampleRate: 16000, channelCount: 1}});
+                    this.recorder = new MediaRecorder(stream);
+                    this.chunks = [];
+                    this.recorder.ondataavailable = e => this.chunks.push(e.data);
+                    this.recorder.onstop = () => this.process();
+                    this.recorder.start();
+                    this.isRecording = true;
+                    this.recordButton.textContent = '录音中... (按任意键结束)';
+                    this.recordButton.classList.add('recording');
+                    this.startCountdown();
+                    setTimeout(() => this.stop(), 30000);
+                } catch(e) { alert('麦克风权限被拒绝'); }
+            }
+            startCountdown() {
+                this.time = 30;
+                this.timer = setInterval(() => {
+                    this.countdown.textContent = \\\`剩余 \\\${this.time--} 秒\\\`;
+                    if (this.time < 0) clearInterval(this.timer);
+                }, 1000);
+            }
+            stop() {
+                if (!this.isRecording) return;
+                this.isRecording = false;
+                this.recorder.stop();
+                this.recorder.stream.getTracks().forEach(t => t.stop());
+                this.recordButton.textContent = '识别中...';
+                this.recordButton.classList.remove('recording');
+                this.countdown.textContent = '';
+                clearInterval(this.timer);
+            }
+            async process() {
+                try {
+                    const blob = new Blob(this.chunks);
+                    const audioData = await this.convertToPCM(blob);
+                    const res = await fetch(this.apiUrl, {
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({token: this.token, audioData, appKey: this.appKey, 
+                                            accessKeyId: this.accessKeyId, accessKeySecret: this.accessKeySecret, 
+                                            format: 'pcm', sampleRate: 16000})
+                    });
+                    const result = await res.json();
+                    this.result.textContent = result.success && result.result ? 
+                        \\\`识别结果：「\\\${result.result}」\\\` : '识别结果：「未识别到内容」';
+                    this.result.style.display = 'block';
+                } catch(e) {
+                    this.result.textContent = '识别失败，请重试';
+                    this.result.style.display = 'block';
+                } finally {
+                    this.recordButton.textContent = '开始录音';
+                }
+            }
+            async convertToPCM(blob) {
+                const ctx = new AudioContext();
+                const buf = await ctx.decodeAudioData(await blob.arrayBuffer());
+                const data = buf.getChannelData(0);
+                const resampled = this.resample(data, buf.sampleRate, 16000);
+                const int16 = new Int16Array(resampled.length);
+                for (let i = 0; i < resampled.length; i++) {
+                    const s = Math.max(-1, Math.min(1, resampled[i]));
+                    int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                }
+                return Array.from(new Uint8Array(int16.buffer));
+            }
+            resample(input, inRate, outRate) {
+                if (inRate === outRate) return input;
+                const ratio = inRate / outRate;
+                const len = Math.floor(input.length / ratio);
+                const output = new Float32Array(len);
+                for (let i = 0; i < len; i++) {
+                    const idx = i * ratio;
+                    const floor = Math.floor(idx);
+                    const frac = idx - floor;
+                    output[i] = floor + 1 < input.length ? 
+                        input[floor] * (1 - frac) + input[floor + 1] * frac : input[floor] || 0;
+                }
+                return output;
+            }
+        }
+        new SimpleVoiceRecognizer();
+    </script>
+</body>
+</html>\`;
+
+        // 下载HTML文件
+        const blob = new Blob([demoHtml], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = \`语音识别示例_\${new Date().toISOString().slice(0, 10)}.html\`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        console.log('示例HTML文件已生成并下载');
+    }
 }
 
 // 初始化测试器
