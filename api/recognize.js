@@ -2,52 +2,6 @@
 const { RPCClient } = require('@alicloud/pop-core');
 
 /**
- * 获取阿里云Token - 基于local_server的实现
- */
-async function getAliyunToken(accessKeyId, accessKeySecret) {
-    try {
-        console.log('🔑 创建阿里云客户端...');
-        console.log('   AccessKey ID:', accessKeyId ? accessKeyId.substring(0, 8) + '...' : 'undefined');
-        
-        // 使用HTTPS端点 - 与local_server版本一致
-        const client = new RPCClient({
-            accessKeyId: accessKeyId,
-            accessKeySecret: accessKeySecret,
-            endpoint: 'https://nls-meta.cn-shanghai.aliyuncs.com', // HTTPS，与local_server一致
-            apiVersion: '2019-02-28'
-        });
-        
-        console.log('🔄 调用CreateToken API...');
-        
-        // 与local_server版本一致的调用方式
-        const result = await client.request('CreateToken', {}, {
-            method: 'POST'
-        });
-        
-        console.log('✅ Token获取成功:');
-        console.log('   Token ID:', result.Token.Id ? result.Token.Id.substring(0, 16) + '...' : 'undefined');
-        console.log('   过期时间:', new Date(result.Token.ExpireTime * 1000).toLocaleString());
-        
-        return {
-            success: true,
-            token: result.Token.Id,
-            expireTime: result.Token.ExpireTime
-        };
-        
-    } catch (error) {
-        console.error('❌ Token获取失败:', error);
-        console.error('   错误类型:', error.constructor.name);
-        console.error('   错误代码:', error.code || 'N/A');
-        console.error('   错误消息:', error.message);
-        
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
-/**
  * 根据接收到的数据类型提供格式转换建议
  */
 function getAudioFormatSuggestion(receivedType) {
@@ -175,7 +129,6 @@ async function callAliyunNLS(requestData) {
                 result: result.result || result.text || result.transcript || result.content || '',
                 timestamp: Date.now(),
                 version: "AUDIO_DEBUG_v7.1_UPDATED",
-                debug: "v7.1更新：修复音频格式和版本标识",
                 aliyunApiResponse: {
                     status: result.status,
                     message: result.message || 'N/A',
@@ -205,15 +158,6 @@ async function callAliyunNLS(requestData) {
  * Vercel Function 主函数 - 基于local_server的实现
  */
 export default async function handler(req, res) {
-    // 强制显示日志 - 即使是错误也要显示
-    console.error('🚀🚀🚀 [CRITICAL] recognize.js handler 开始执行 🚀🚀🚀');
-    console.error('🚀🚀🚀 [CRITICAL] 请求方法:', req.method);
-    console.error('🚀🚀🚀 [CRITICAL] 请求时间:', new Date().toISOString());
-    
-    console.log('🚀 [ROUTE] recognize.js handler 开始执行');
-    console.log('🚀 [ROUTE] 请求方法:', req.method);
-    console.log('🚀 [ROUTE] 请求时间:', new Date().toISOString());
-    
     // 设置CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -410,18 +354,30 @@ const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/re
             }
             
             console.log('🔄 正在获取阿里云访问令牌...');
-            const tokenResult = await getAliyunToken(accessKeyId, accessKeySecret);
             
-            if (!tokenResult.success) {
-                console.log(`❌ Token获取失败: ${tokenResult.error}`);
+            try {
+                // 直接实现token获取，避免重复函数
+                const client = new RPCClient({
+                    accessKeyId: accessKeyId,
+                    accessKeySecret: accessKeySecret,
+                    endpoint: 'https://nls-meta.cn-shanghai.aliyuncs.com',
+                    apiVersion: '2019-02-28'
+                });
+                
+                const result = await client.request('CreateToken', {}, {
+                    method: 'POST'
+                });
+                
+                finalToken = result.Token.Id;
+                console.log('✅ 访问令牌获取成功');
+                
+            } catch (error) {
+                console.log(`❌ Token获取失败: ${error.message}`);
                 return res.status(401).json({
                     success: false,
-                    error: `获取访问令牌失败: ${tokenResult.error}`
+                    error: `获取访问令牌失败: ${error.message}`
                 });
             }
-            
-            finalToken = tokenResult.token;
-            console.log('✅ 访问令牌获取成功');
         }
 
         console.log('🔑 [ROUTE] 使用Token:', finalToken ? finalToken.substring(0, 16) + '...' : 'undefined');
