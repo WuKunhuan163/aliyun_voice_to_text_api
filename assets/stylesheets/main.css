@@ -33,7 +33,7 @@ body {
 /* 移动端响应式设计 */
 @media (max-width: 768px) {
     .container {
-        padding: 20px; /* 减小一半 */
+        padding: 40px 20px; /* 上下40px，左右20px（减小一半） */
         margin: 15px 0px; /* 减小外边距 */
         min-width: 320px; /* 调整最小宽度适应手机 */
         width: 95%; /* 增加宽度利用率 */
