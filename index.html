@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>阿里云语音识别API</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="assets/stylesheets/main.css">
 </head>
 <body>
@@ -13,10 +14,15 @@
         
         <!-- API配置区域 -->
         <div class="config-section">
-                <div class="form-group">
+                            <div class="form-group">
                 <label>API地址:</label>
-                <input type="text" value="https://aliyun-voice-to-text-api.vercel.app/api/recognize" disabled readonly class="readonly-field">
+                <div class="input-with-copy">
+                    <input type="text" id="apiUrlField" value="https://aliyun-voice-to-text-api.vercel.app/api/recognize" disabled readonly class="readonly-field">
+                    <button type="button" class="copy-button" onclick="copyToClipboard('apiUrlField')" title="复制API地址">
+                        <i class='bx bx-copy'></i>
+                    </button>
                 </div>
+            </div>
             
             
             <div class="form-group">
@@ -34,7 +40,12 @@
             
             <div class="form-group">
                 <label>Token:</label>
-                <input type="text" id="tokenField" value="将在填写密钥后自动获取..." disabled readonly class="readonly-field">
+                <div class="input-with-copy">
+                    <input type="text" id="tokenField" value="将在填写密钥后自动获取..." disabled readonly class="readonly-field">
+                    <button type="button" class="copy-button" onclick="copyToClipboard('tokenField')" title="复制Token">
+                        <i class='bx bx-copy'></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -58,5 +69,42 @@
     </div>
 
     <script src="assets/scripts/main.js"></script>
+    <script>
+        // 复制到剪贴板功能
+        function copyToClipboard(fieldId) {
+            const field = document.getElementById(fieldId);
+            const text = field.value;
+            
+            if (!text || text === '将在填写密钥后自动获取...' || text === '获取失败，请检查密钥信息') {
+                alert('没有可复制的内容');
+                return;
+            }
+            
+            // 使用现代的Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    alert('复制成功！');
+                }).catch(() => {
+                    // 如果Clipboard API失败，使用传统方法
+                    fallbackCopy(field);
+                });
+            } else {
+                // 使用传统的复制方法
+                fallbackCopy(field);
+            }
+        }
+        
+        function fallbackCopy(field) {
+            try {
+                field.select();
+                field.setSelectionRange(0, 99999); // 对移动设备
+                document.execCommand('copy');
+                alert('复制成功！');
+            } catch (err) {
+                alert('复制失败，请手动复制');
+                console.error('复制失败:', err);
+            }
+        }
+    </script>
 </body>
 </html>

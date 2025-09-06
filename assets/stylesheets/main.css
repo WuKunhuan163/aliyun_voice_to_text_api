@@ -71,6 +71,44 @@ h1 {
     margin: 0;
 }
 
+/* 带复制按钮的输入框容器 */
+.input-with-copy {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-with-copy input {
+    flex: 1;
+}
+
+/* 复制按钮样式 */
+.copy-button {
+    padding: 8px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+    font-size: 16px;
+    min-width: 36px;
+    height: 36px;
+}
+
+.copy-button:hover {
+    background: #5a6fd8;
+}
+
+.copy-button:active {
+    background: #4c63d2;
+    transform: scale(0.95);
+}
+
 /* 表单字段通用样式 */
 .form-group input {
     flex: 1;
