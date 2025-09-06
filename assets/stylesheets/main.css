@@ -287,7 +287,6 @@ h1 {
 /* 录音区域 */
 .record-section {
     margin: 25px 0;
-    display: flex;
     gap: 12px;
     align-items: center;
 }

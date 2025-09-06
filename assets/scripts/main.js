@@ -382,7 +382,7 @@ class VoiceRecognitionTester {
             this.currentAudioByteArray = audioByteArray;
             
             // 立即显示下载按钮
-            this.downloadButton.style.display = 'block';
+            this.downloadButton.style.display = 'inline-block';
             
             // 自动调用语音识别
             await this.recognizeAudio(audioByteArray);
