@@ -135,7 +135,14 @@ async function callAliyunNLS(requestData) {
                 result: result.result || result.text || result.transcript || result.content || '',
                 timestamp: Date.now(),
                 version: "CRITICAL_LOG_TEST_v4.0",
-                debug: "如果看到这个字段说明使用了最新代码"
+                debug: "如果看到这个字段说明使用了最新代码",
+                aliyunApiResponse: {
+                    status: result.status,
+                    message: result.message || 'N/A',
+                    hasResult: !!result.result,
+                    resultLength: result.result ? result.result.length : 0,
+                    allFields: Object.keys(result)
+                }
             };
         } else {
             // 识别失败
@@ -299,6 +306,19 @@ export default async function handler(req, res) {
             sampleRate: sampleRate,
             appKey: appKey
         });
+
+        // 在返回结果中添加调试信息
+        recognitionResult.debugInfo = {
+            receivedToken: !!finalToken,
+            tokenLength: finalToken ? finalToken.length : 0,
+            audioDataLength: audioData.length,
+            audioDataType: typeof audioData,
+            audioDataIsArray: Array.isArray(audioData),
+            appKey: appKey,
+            format: format,
+            sampleRate: sampleRate,
+            executionPath: "callAliyunNLS_executed"
+        };
 
         console.log('✅ [ROUTE] 识别结果:', recognitionResult.result);
         console.log('📤 [ROUTE] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
