@@ -295,7 +295,7 @@ class VoiceRecognitionTester {
         guide += ' 通用解决方案：确保网站使用HTTPS访问，重新加载页面后再次尝试，清除浏览器缓存和Cookie，检查系统麦克风设备是否正常工作，或重启浏览器后重新尝试。';
         
         if (isMobile) {
-            guide += ' 移动端注意：确保使用HTTPS访问网站，检查系统设置中的浏览器麦克风权限，某些浏览器需要在系统设置中单独允许。';
+            guide += ' 移动端设置：iPhone Chrome用户请打开Chrome点击地址栏左侧的麦克风图标启用权限，如果图标未显示请前往iPhone设置-Chrome-麦克风确保已开启访问权限。Android用户请在系统设置-应用-Chrome-权限中开启麦克风权限。确保使用HTTPS访问网站。';
         }
         
         return guide;
