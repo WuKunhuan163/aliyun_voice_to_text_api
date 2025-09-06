@@ -517,6 +517,10 @@ h1 {
     fill: rgba(0, 123, 255, 0.05);
 }
 
+.transcription-container.processing .waveform-bar {
+    fill: rgba(0, 123, 255, 0.6);
+}
+
 .transcription-container.processing .waveform-progress-mask {
     fill: rgba(0, 123, 255, 0.15);
 }
@@ -525,8 +529,24 @@ h1 {
     fill: rgba(40, 167, 69, 0.1);
 }
 
+.transcription-container.completed .waveform-bar {
+    fill: rgba(40, 167, 69, 0.8);
+}
+
 .transcription-container.completed .waveform-progress-mask {
     fill: rgba(40, 167, 69, 0.3);
+}
+
+.transcription-container.warning .waveform-background {
+    fill: rgba(255, 193, 7, 0.1);
+}
+
+.transcription-container.warning .waveform-bar {
+    fill: rgba(255, 193, 7, 0.8);
+}
+
+.transcription-container.warning .waveform-progress-mask {
+    fill: rgba(255, 193, 7, 0.3);
 }
 
 /* 转录结果文本区域 */

@@ -13,7 +13,7 @@ class VoiceRecognitionTester {
         
         // 波峰图相关
         this.waveformData = [];
-        this.maxWaveformBars = 300; // 30秒录音，每0.1秒一个峰值条
+        this.maxWaveformBars = 300; // 30秒录音，每0.1秒一个峰值条，与local_server一致
         this.waveformUpdateInterval = 100; // 每100ms更新一次峰值图
         this.currentAmplitude = 0;
         this.waveformTimer = null;
@@ -458,9 +458,10 @@ class VoiceRecognitionTester {
         // 清空现有的峰值条
         this.waveformBars.innerHTML = '';
         
-        // 显示所有已有的波形数据，但最多100个条
-        const totalBarsToShow = Math.min(100, this.waveformData.length);
-        const barWidth = 1000 / 100; // SVG宽度1000，100个条
+        // 计算当前录音进度，模仿local_server
+        const elapsed = this.isRecording ? (Date.now() - this.recordingStartTime) / 1000 : 30;
+        const totalBarsToShow = Math.min(this.maxWaveformBars, Math.ceil(elapsed * 10)); // 每秒10个峰值条
+        const barWidth = 1000 / this.maxWaveformBars; // SVG viewBox宽度为1000，总条数为300
         
         // 从数据的末尾开始显示
         const startIndex = Math.max(0, this.waveformData.length - totalBarsToShow);
@@ -725,11 +726,15 @@ class VoiceRecognitionTester {
                     this.showResultStatus('未识别到内容', 'warning');
                 }
                 
-                // 设置识别完成状态 - 波形变为绿色
+                // 设置识别完成状态 - 根据结果设置不同颜色
                 const transcriptionContainer = document.querySelector('.transcription-container');
                 if (transcriptionContainer) {
                     transcriptionContainer.classList.remove('processing');
-                    transcriptionContainer.classList.add('completed');
+                    if (recognizedText) {
+                        transcriptionContainer.classList.add('completed'); // 绿色
+                    } else {
+                        transcriptionContainer.classList.add('warning'); // 土黄色
+                    }
                 }
                 
                 // 隐藏进度条
