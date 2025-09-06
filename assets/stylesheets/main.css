@@ -23,7 +23,6 @@ body {
     padding: 40px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     max-width: 600px;
-    min-width: 400px;
     overflow-x: scroll;
     width: 90%;
     text-align: center;
@@ -294,21 +293,27 @@ h1 {
     align-items: center;
 }
 
-.record-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* 统一的操作按钮样式 */
+.action-button, .record-button, .download-button, .demo-button {
     color: white;
     border: none;
     padding: 14px 28px;
-    border-radius: 8px;
+    border-radius: 12px;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    margin: 5px;
 }
 
-.record-button:hover:not(:disabled) {
+.action-button:hover, .record-button:hover:not(:disabled), .download-button:hover, .demo-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* 录音按钮 - 蓝色渐变 */
+.record-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .record-button:disabled {
@@ -322,21 +327,14 @@ h1 {
     animation: pulse 2s infinite;
 }
 
+/* 下载按钮 - 绿色渐变 */
 .download-button {
     background: linear-gradient(135deg, #38a169 0%, #48bb78 100%);
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.download-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(56, 161, 105, 0.3);
+/* 示例HTML按钮 - 橙色渐变 */
+.demo-button {
+    background: linear-gradient(135deg, #ed8936 0%, #dd7324 100%);
 }
 
 /* 状态显示 */
@@ -518,19 +516,3 @@ h1 {
     color: #744210;
 }
 
-/* 示例HTML按钮 */
-.demo-button {
-    background: #ed8936;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    margin-left: 10px;
-    transition: background-color 0.3s;
-}
-
-.demo-button:hover {
-    background: #dd7324;
-}
