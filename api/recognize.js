@@ -51,15 +51,16 @@ async function getAliyunToken(accessKeyId, accessKeySecret) {
  * 调用阿里云NLS语音识别API - 完全基于local_server的实现
  */
 async function callAliyunNLS(requestData) {
+    console.log('🌐 [NLS] callAliyunNLS 函数开始执行');
     const { token, audioData, format = 'pcm', sampleRate = 16000, appKey } = requestData;
     
     try {
-        console.log('🎤 音频数据长度:', audioData ? audioData.length : 'undefined');
-        console.log('🔍 音频数据类型:', typeof audioData);
-        console.log('🔍 音频数据是否为数组:', Array.isArray(audioData));
-        console.log('🔍 音频数据前5个元素:', audioData ? audioData.slice(0, 5) : 'undefined');
-        console.log('🔑 使用Token:', token ? token.substring(0, 16) + '...' : 'undefined');
-        console.log('🔐 使用AppKey:', appKey || 'undefined');
+        console.log('🎤 [NLS] 音频数据长度:', audioData ? audioData.length : 'undefined');
+        console.log('🔍 [NLS] 音频数据类型:', typeof audioData);
+        console.log('🔍 [NLS] 音频数据是否为数组:', Array.isArray(audioData));
+        console.log('🔍 [NLS] 音频数据前5个元素:', audioData ? audioData.slice(0, 5) : 'undefined');
+        console.log('🔑 [NLS] 使用Token:', token ? token.substring(0, 16) + '...' : 'undefined');
+        console.log('🔐 [NLS] 使用AppKey:', appKey || 'undefined');
         
         // 构建请求URL - 与local_server版本完全相同
         const nlsUrl = 'https://nls-gateway.cn-shanghai.aliyuncs.com/stream/v1/asr';
@@ -155,6 +156,10 @@ async function callAliyunNLS(requestData) {
  * Vercel Function 主函数 - 基于local_server的实现
  */
 export default async function handler(req, res) {
+    console.log('🚀 [ROUTE] recognize.js handler 开始执行');
+    console.log('🚀 [ROUTE] 请求方法:', req.method);
+    console.log('🚀 [ROUTE] 请求时间:', new Date().toISOString());
+    
     // 设置CORS头
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -162,24 +167,26 @@ export default async function handler(req, res) {
     
     // 处理CORS预检请求
     if (req.method === 'OPTIONS') {
+        console.log('🚀 [ROUTE] 处理OPTIONS预检请求');
         res.status(200).end();
         return;
     }
 
     // 只允许POST请求
     if (req.method !== 'POST') {
-        console.log(`❌ 不支持的请求方法: ${req.method}`);
+        console.log(`❌ [ROUTE] 不支持的请求方法: ${req.method}`);
         return res.status(405).json({ 
             success: false, 
             error: '只支持POST请求' 
         });
     }
 
-    console.log('🔍 收到语音识别请求 - 使用最新的recognize.js v2.0');
-    console.log('收到语音识别请求:', {
+    console.log('🔍 [ROUTE] 收到语音识别请求 - 使用最新的recognize.js v3.0');
+    console.log('📋 [ROUTE] 请求详情:', {
         method: req.method,
         body: req.body ? Object.keys(req.body) : 'no body',
-        contentType: req.headers['content-type']
+        contentType: req.headers['content-type'],
+        bodySize: req.body ? JSON.stringify(req.body).length : 0
     });
 
     try {
@@ -239,13 +246,14 @@ export default async function handler(req, res) {
         }
 
         console.log(`✅ 音频数据验证通过: ${audioData.length} bytes (数组)`);
-        console.log('🎤 音频数据长度:', audioData.length);
-        console.log('🔍 详细音频数据信息:');
+        console.log('🎤 [ROUTE] 音频数据长度:', audioData.length);
+        console.log('🔍 [ROUTE] 详细音频数据信息:');
         console.log('   类型:', typeof audioData);
         console.log('   是否为数组:', Array.isArray(audioData));
         console.log('   前10个元素:', audioData.slice(0, 10));
         console.log('   构造函数:', audioData.constructor.name);
         
+        console.log('🔑 [ROUTE] 开始处理Token逻辑');
         let finalToken = token;
         
         // 如果没有直接传入token，则需要获取token
@@ -273,8 +281,9 @@ export default async function handler(req, res) {
             console.log('✅ 访问令牌获取成功');
         }
 
-        console.log('🔑 使用Token:', finalToken ? finalToken.substring(0, 16) + '...' : 'undefined');
+        console.log('🔑 [ROUTE] 使用Token:', finalToken ? finalToken.substring(0, 16) + '...' : 'undefined');
         
+        console.log('🎯 [ROUTE] 开始调用阿里云NLS API');
         // 调用语音识别 - 与local_server版本完全相同的参数
         const recognitionResult = await callAliyunNLS({
             token: finalToken,
@@ -284,7 +293,8 @@ export default async function handler(req, res) {
             appKey: appKey
         });
 
-        console.log('✅ 识别结果:', recognitionResult.result);
+        console.log('✅ [ROUTE] 识别结果:', recognitionResult.result);
+        console.log('📤 [ROUTE] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
         
         // 返回格式与local_server版本一致
         return res.json(recognitionResult);
