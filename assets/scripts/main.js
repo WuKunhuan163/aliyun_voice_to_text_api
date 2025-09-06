@@ -267,12 +267,13 @@ class VoiceRecognitionTester {
     }
     
     getBrowserPermissionGuide() {
-        // 检测浏览器类型 - 修复检测逻辑
+        // 检测浏览器类型 - 修复移动端Chrome检测
         const userAgent = navigator.userAgent;
         const isEdge = /Edg/.test(userAgent);
-        const isChrome = /Chrome/.test(userAgent) && !isEdge;
-        const isFirefox = /Firefox/.test(userAgent);
-        const isSafari = /Safari/.test(userAgent) && !isChrome && !isEdge;
+        // 修复：移动端Chrome的User-Agent包含"CriOS"(iOS)或"Chrome"
+        const isChrome = (/Chrome/.test(userAgent) || /CriOS/.test(userAgent)) && !isEdge;
+        const isFirefox = /Firefox/.test(userAgent) || /FxiOS/.test(userAgent);
+        const isSafari = /Safari/.test(userAgent) && !isChrome && !isEdge && !isFirefox;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
         
         console.log('浏览器检测结果:', { isChrome, isFirefox, isSafari, isEdge, userAgent });
