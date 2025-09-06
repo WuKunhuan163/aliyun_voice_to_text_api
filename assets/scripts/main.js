@@ -646,7 +646,7 @@ class VoiceRecognitionTester {
             return;
         }
 
-        const demoHtml = \`<!DOCTYPE html>
+        const demoHtml = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -686,9 +686,9 @@ class VoiceRecognitionTester {
     <script>
         class SimpleVoiceRecognizer {
             constructor() {
-                this.appKey = '\${appKey}';
-                this.accessKeyId = '\${accessKeyId}';
-                this.accessKeySecret = '\${accessKeySecret}';
+                this.appKey = '${appKey}';
+                this.accessKeyId = '${accessKeyId}';
+                this.accessKeySecret = '${accessKeySecret}';
                 this.apiUrl = 'https://aliyun-voice-to-text-api.vercel.app/api/recognize';
                 this.init();
             }
@@ -729,7 +729,7 @@ class VoiceRecognitionTester {
             startCountdown() {
                 this.time = 30;
                 this.timer = setInterval(() => {
-                    this.countdown.textContent = \\\`剩余 \\\${this.time--} 秒\\\`;
+                    this.countdown.textContent = `剩余 ${this.time--} 秒`;
                     if (this.time < 0) clearInterval(this.timer);
                 }, 1000);
             }
@@ -755,7 +755,7 @@ class VoiceRecognitionTester {
                     });
                     const result = await res.json();
                     this.result.textContent = result.success && result.result ? 
-                        \\\`识别结果：「\\\${result.result}」\\\` : '识别结果：「未识别到内容」';
+                        `识别结果：「${result.result}」` : '识别结果：「未识别到内容」';
                     this.result.style.display = 'block';
                 } catch(e) {
                     this.result.textContent = '识别失败，请重试';
@@ -801,7 +801,7 @@ class VoiceRecognitionTester {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = \`语音识别示例_\${new Date().toISOString().slice(0, 10)}.html\`;
+        a.download = `语音识别示例_${new Date().toISOString().slice(0, 10)}.html`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
