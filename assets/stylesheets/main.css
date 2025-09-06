@@ -23,6 +23,7 @@ body {
     padding: 40px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     max-width: 600px;
+    min-width: 400px;
     overflow-x: scroll;
     width: 90%;
     text-align: center;
@@ -93,7 +94,7 @@ h1 {
 
 .input-with-copy input {
     flex: 1;
-    min-width: 0; /* 防止flex项目超出容器 */
+    width: 1px;
 }
 
 /* 复制按钮样式 */
