@@ -567,26 +567,11 @@ class VoiceRecognitionTester {
         }
     }
 
-    // 根据识别结果显示不同颜色的状态
-    showResultStatus(text) {
-        const textLength = text.length;
-        
-        if (textLength >= 10) {
-            // 绿色：成功，文字超过10字
-            this.transcriptionResult.textContent = `录音结果：${text}`;
-            this.transcriptionResult.className = 'transcription-textarea success has-content';
-            this.showStatus(`识别成功！识别了 ${textLength} 个字符`, 'success');
-        } else if (textLength > 0) {
-            // 黄色：成功但文字较少
-            this.transcriptionResult.textContent = `录音结果：${text}`;
-            this.transcriptionResult.className = 'transcription-textarea warning has-content';
-            this.showStatus(`识别成功，但文字较少：${textLength} 个字符`, 'warning');
-        } else {
-            // 红色：识别失败或无内容
-            this.transcriptionResult.textContent = '识别成功但无文字内容';
-            this.transcriptionResult.className = 'transcription-textarea error';
-            this.showStatus('识别成功但无文字内容', 'error');
-        }
+    // 简化的状态显示函数 - 不再覆盖已设置的结果
+    showResultStatus(message, type) {
+        // 只显示状态消息，不覆盖transcriptionResult的内容
+        console.log(`📊 状态更新: ${message} (${type})`);
+        // 可以在这里添加其他状态指示器的更新，但不改变主要结果显示
     }
 
     downloadRecording() {
