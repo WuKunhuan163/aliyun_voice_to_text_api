@@ -234,13 +234,7 @@ h1 {
     gap: 1px;
 }
 
-.waveform-bar {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 1px;
-    min-height: 2px;
-    transition: height 0.1s ease;
-}
+/* 旧的flex布局waveform-bar样式已移除，使用SVG版本 */
 
 .transcription-textarea {
     width: 100%;

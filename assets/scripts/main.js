@@ -238,6 +238,13 @@ class VoiceRecognitionTester {
             this.transcriptionResult.classList.add('recording');
             this.transcriptionResult.setAttribute('data-placeholder', '录音识别中...');
             
+            // 给波形容器添加录音状态类，控制波形颜色
+            const transcriptionContainer = document.querySelector('.transcription-container');
+            if (transcriptionContainer) {
+                transcriptionContainer.classList.add('recording');
+                transcriptionContainer.classList.remove('processing', 'completed');
+            }
+            
             this.updateUI();
             this.startTimer();
             this.startMiniWaveformTimer();
@@ -420,8 +427,8 @@ class VoiceRecognitionTester {
         }
         const averageAmplitude = sum / sampleSize / 255; // 归一化到0-1
         
-        // 转换为峰图高度 (1-25px)
-        const height = Math.min(25, Math.max(1, averageAmplitude * 100));
+        // 转换为峰图高度 (1-25px) - 降低敏感度，模仿local_server
+        const height = Math.min(25, Math.max(1, averageAmplitude * 30));
         
         // 添加到波形数据
         this.waveformData.push(height);
@@ -458,8 +465,7 @@ class VoiceRecognitionTester {
                 rect.setAttribute('y', 30 - height); // 从底部开始
                 rect.setAttribute('width', barWidth * 0.8); // 留一点间隙
                 rect.setAttribute('height', height);
-                rect.setAttribute('fill', '#667eea');
-                rect.setAttribute('opacity', '0.7');
+                // 移除内联fill和opacity，让CSS类控制颜色
                 this.waveformBars.appendChild(rect);
             }
         }
@@ -509,6 +515,12 @@ class VoiceRecognitionTester {
         this.transcriptionProgress.style.display = 'none';
         this.transcriptionResult.classList.remove('recording');
         this.transcriptionResult.setAttribute('data-placeholder', '录音完成后，语音识别结果将显示在这里...');
+        
+        // 移除波形容器的录音状态类
+        const transcriptionContainer = document.querySelector('.transcription-container');
+        if (transcriptionContainer) {
+            transcriptionContainer.classList.remove('recording');
+        }
 
         this.updateUI();
         this.showStatus('录音结束，正在处理...', 'processing');
