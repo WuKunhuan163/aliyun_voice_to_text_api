@@ -245,6 +245,7 @@ h1 {
 .transcription-textarea {
     width: 100%;
     min-height: 120px;
+    max-height: 300px; /* 添加最大高度限制 */
     padding: 16px;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
@@ -256,7 +257,8 @@ h1 {
     transition: border-color 0.3s, background-color 0.3s;
     white-space: pre-wrap;
     word-wrap: break-word;
-    overflow-y: auto;
+    overflow-y: auto; /* 确保垂直滚动 */
+    overflow-x: hidden; /* 隐藏水平滚动 */
 }
 
 /* div形式的placeholder效果 */
