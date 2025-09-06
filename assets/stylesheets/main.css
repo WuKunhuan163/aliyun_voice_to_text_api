@@ -30,6 +30,37 @@ body {
     margin: 30px 0px 30px 0px;
 }
 
+/* 移动端响应式设计 */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px; /* 减小一半 */
+        margin: 15px 0px; /* 减小外边距 */
+        min-width: 320px; /* 调整最小宽度适应手机 */
+        width: 95%; /* 增加宽度利用率 */
+        border-radius: 15px; /* 稍微减小圆角 */
+    }
+    
+    h1 {
+        font-size: 1.5rem; /* 减小标题字体 */
+        margin-bottom: 20px; /* 减小间距 */
+    }
+    
+    .form-group {
+        margin-bottom: 15px; /* 减小表单间距 */
+    }
+    
+    .action-button, .record-button, .download-button, .demo-button {
+        padding: 12px 20px; /* 减小按钮内边距 */
+        font-size: 0.9rem; /* 稍微减小字体 */
+        margin: 3px; /* 减小按钮间距 */
+    }
+    
+    .transcription-result {
+        min-height: 60px; /* 减小最小高度 */
+        font-size: 13px; /* 减小字体大小 */
+    }
+}
+
 h1 {
     color: #4a5568;
     margin-bottom: 30px;
