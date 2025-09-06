@@ -26,6 +26,7 @@ class VoiceRecognitionTester {
     initElements() {
         this.recordButton = document.getElementById('recordButton');
         this.downloadButton = document.getElementById('downloadButton');
+        this.demoHtmlButton = document.getElementById('demoHtmlButton');
         this.transcriptionResult = document.getElementById('transcriptionResult');
         
         // 新的进度条和波形图元素 - 适配新的HTML结构
@@ -85,6 +86,10 @@ class VoiceRecognitionTester {
             this.downloadRecording();
         });
 
+        this.demoHtmlButton.addEventListener('click', () => {
+            this.generateDemoHtml();
+        });
+
         // 监听密钥输入，自动获取Token
         this.accessKeyId.addEventListener('input', () => {
             this.checkAndGetToken();
@@ -130,7 +135,7 @@ class VoiceRecognitionTester {
             this.transcriptionResult.innerHTML = '正在获取Token，请稍候...';
             this.transcriptionResult.className = "transcription-textarea processing";
         } else {
-            this.transcriptionResult.innerHTML = '配置完成！点击"开始录音测试"按钮开始语音识别';
+            this.transcriptionResult.innerHTML = '配置完成！点击"开始录音"按钮开始语音识别';
             this.transcriptionResult.className = "transcription-textarea success";
         }
     }
@@ -308,18 +313,28 @@ class VoiceRecognitionTester {
     updateProgressBar() {
         const elapsed = Date.now() - this.recordingStartTime;
         const progress = Math.min((elapsed / (30 * 1000)) * 100, 100);
-        this.progressBar.style.width = progress + '%';
+        if (this.progressFill) {
+            this.progressFill.style.width = progress + '%';
+        }
     }
 
     updateMiniWaveform() {
+        if (!this.waveformBars || !this.waveformBars.children) return;
+        
         // 模拟音频峰值
         const amplitude = this.currentAmplitude || Math.random() * 0.8 + 0.1;
         
-        // 更新波形条
-        this.waveformBars.forEach((bar, index) => {
-            const randomHeight = Math.random() * amplitude * 100 + 10;
-            bar.style.height = Math.min(randomHeight, 100) + '%';
-        });
+        // 更新SVG波形条
+        const bars = this.waveformBars.children;
+        for (let i = 0; i < bars.length; i++) {
+            const bar = bars[i];
+            const randomHeight = Math.random() * amplitude * 25 + 2; // 高度范围2-27px
+            const y = 15 - randomHeight / 2;
+            
+            bar.setAttribute('height', randomHeight);
+            bar.setAttribute('y', y);
+            bar.setAttribute('opacity', '0.8');
+        }
     }
 
     stopRecording() {
@@ -377,7 +392,7 @@ class VoiceRecognitionTester {
             this.showStatus('录音处理失败: ' + error.message, 'error');
         } finally {
             // 恢复按钮状态
-            this.recordButton.textContent = '开始录音测试';
+            this.recordButton.textContent = '开始录音';
             this.recordButton.disabled = false;
         }
     }
@@ -520,14 +535,17 @@ class VoiceRecognitionTester {
                 console.log('✅ 识别成功！文本内容:', `"${recognizedText}"`);
                 console.log('📝 文本长度:', recognizedText.length);
                 
-                // 立即显示识别结果到文本框
+                // 立即显示识别结果到文本框 - 使用指定格式
                 if (recognizedText) {
-                    this.transcriptionResult.textContent = recognizedText;
-                    this.transcriptionResult.className = "transcription-textarea success";
+                    this.transcriptionResult.textContent = `识别结果：「${recognizedText}」`;
+                    this.transcriptionResult.className = "transcription-result success";
                     this.showResultStatus('识别成功', 'success');
+                    
+                    // 显示示例HTML按钮
+                    this.demoHtmlButton.style.display = 'inline-block';
                 } else {
-                    this.transcriptionResult.textContent = '未识别到内容，请重试';
-                    this.transcriptionResult.className = "transcription-textarea warning";
+                    this.transcriptionResult.textContent = '识别结果：「未识别到内容，请重试」';
+                    this.transcriptionResult.className = "transcription-result warning";
                     this.showResultStatus('未识别到内容', 'warning');
                 }
                 
@@ -595,7 +613,7 @@ class VoiceRecognitionTester {
             this.recordButton.classList.add('recording');
             this.downloadButton.style.display = 'none';
         } else {
-            this.recordButton.textContent = '开始录音测试';
+            this.recordButton.textContent = '开始录音';
             this.recordButton.classList.remove('recording');
             
             // 重置所有显示
@@ -604,7 +622,9 @@ class VoiceRecognitionTester {
             this.downloadButton.style.display = 'none';
             
             // 重置进度条
-            this.progressBar.style.width = '0%';
+            if (this.progressFill) {
+                this.progressFill.style.width = '0%';
+            }
             this.initMiniWaveform();
         }
     }

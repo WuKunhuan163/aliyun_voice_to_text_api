@@ -503,3 +503,20 @@ h1 {
     background: #fef5e7;
     color: #744210;
 }
+
+/* 示例HTML按钮 */
+.demo-button {
+    background: #ed8936;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+    transition: background-color 0.3s;
+}
+
+.demo-button:hover {
+    background: #dd7324;
+}
