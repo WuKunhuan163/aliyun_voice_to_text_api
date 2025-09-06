@@ -378,7 +378,23 @@ const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/re
         console.log('   类型:', typeof audioData);
         console.log('   是否为数组:', Array.isArray(audioData));
         console.log('   前10个元素:', audioData.slice(0, 10));
+        console.log('   最后10个元素:', audioData.slice(-10));
         console.log('   构造函数:', audioData.constructor.name);
+        console.log('   数据范围分析:');
+        console.log('   - 最小值:', Math.min(...audioData.slice(0, 1000)));
+        console.log('   - 最大值:', Math.max(...audioData.slice(0, 1000)));
+        console.log('   - 非零元素数量:', audioData.slice(0, 1000).filter(x => x !== 0).length);
+        
+        // 检测音频数据格式
+        const maxVal = Math.max(...audioData.slice(0, 1000));
+        const minVal = Math.min(...audioData.slice(0, 1000));
+        if (maxVal <= 255 && minVal >= 0) {
+            console.log('🎵 [ROUTE] 音频格式分析: 8位无符号PCM (0-255)');
+        } else if (maxVal <= 32767 && minVal >= -32768) {
+            console.log('🎵 [ROUTE] 音频格式分析: 16位有符号PCM (-32768 to 32767)');
+        } else {
+            console.log('🎵 [ROUTE] 音频格式分析: 可能是Float32或其他格式');
+        }
         
         console.log('🔑 [ROUTE] 开始处理Token逻辑');
         let finalToken = token;
@@ -445,8 +461,9 @@ const response = await fetch('https://aliyun-voice-to-text-api.vercel.app/api/re
         console.error('📤📤📤 [CRITICAL] 返回结果给前端:', JSON.stringify(recognitionResult, null, 2));
         
         // 强制添加测试字段确保部署生效
-        recognitionResult.testField = "AUDIO_DEBUG_v6.0";
-        recognitionResult.forceDebug = "这个字段应该出现在响应中";
+        recognitionResult.testField = "AUDIO_DEBUG_v7.1_UPDATED";
+        recognitionResult.forceDebug = "v7.1更新：修复音频格式问题";
+        recognitionResult.updateTimestamp = new Date().toISOString();
         
         // 返回格式与local_server版本一致
         return res.json(recognitionResult);
