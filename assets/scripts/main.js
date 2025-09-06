@@ -254,9 +254,17 @@ class VoiceRecognitionTester {
 
     setupMediaRecorder(stream) {
         this.audioChunks = [];
+        // 尝试使用PCM格式，如果不支持则回退到webm
+        let mimeType = 'audio/webm';
+        if (MediaRecorder.isTypeSupported('audio/wav')) {
+            mimeType = 'audio/wav';
+        }
+        
         this.mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'audio/webm'
+            mimeType: mimeType
         });
+        
+        console.log('🎤 使用音频格式:', mimeType);
 
         this.mediaRecorder.ondataavailable = (event) => {
             this.audioChunks.push(event.data);
@@ -336,11 +344,10 @@ class VoiceRecognitionTester {
             this.recordButton.textContent = '识别中...';
             this.recordButton.disabled = true;
             
-            const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+            const audioBlob = new Blob(this.audioChunks, { type: this.mediaRecorder.mimeType });
             
-            // 转换为字节数组（按照工作版本的方式）
-            const audioArrayBuffer = await this.blobToArrayBuffer(audioBlob);
-            const audioByteArray = Array.from(new Uint8Array(audioArrayBuffer));
+            // 转换为PCM格式（模仿local_server的处理方式）
+            const audioByteArray = await this.convertAudioToPCM(audioBlob);
             
             // 保存录音数据供下载使用
             this.currentAudioBlob = audioBlob;
@@ -384,6 +391,74 @@ class VoiceRecognitionTester {
             reader.onerror = reject;
             reader.readAsArrayBuffer(blob);
         });
+    }
+
+    // 将音频转换为PCM格式（模仿local_server的处理方式）
+    async convertAudioToPCM(audioBlob) {
+        try {
+            console.log('🔄 开始音频转换为PCM格式...');
+            console.log('📊 原始音频大小:', audioBlob.size, 'bytes');
+            
+            // 创建AudioContext用于解码
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // 将Blob转换为ArrayBuffer
+            const arrayBuffer = await this.blobToArrayBuffer(audioBlob);
+            
+            // 解码音频数据
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+            console.log('🎵 解码成功:', audioBuffer.numberOfChannels, '声道,', audioBuffer.sampleRate, 'Hz');
+            
+            // 获取第一个声道的数据
+            const channelData = audioBuffer.getChannelData(0);
+            
+            // 重采样到16kHz（阿里云API要求）
+            const resampledData = this.resampleAudio(channelData, audioBuffer.sampleRate, 16000);
+            console.log('🔄 重采样完成:', resampledData.length, '采样点');
+            
+            // 转换为Int16Array（PCM 16-bit）
+            const int16Data = new Int16Array(resampledData.length);
+            for (let i = 0; i < resampledData.length; i++) {
+                const sample = Math.max(-1, Math.min(1, resampledData[i]));
+                int16Data[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+            }
+            
+            // 转换为字节数组
+            const byteArray = Array.from(new Uint8Array(int16Data.buffer));
+            console.log('✅ PCM转换完成:', byteArray.length, 'bytes');
+            
+            return byteArray;
+            
+        } catch (error) {
+            console.error('❌ 音频转换失败:', error);
+            throw error;
+        }
+    }
+
+    // 音频重采样函数
+    resampleAudio(inputData, inputSampleRate, outputSampleRate) {
+        if (inputSampleRate === outputSampleRate) {
+            return inputData;
+        }
+        
+        const ratio = inputSampleRate / outputSampleRate;
+        const outputLength = Math.floor(inputData.length / ratio);
+        const outputData = new Float32Array(outputLength);
+        
+        for (let i = 0; i < outputLength; i++) {
+            const inputIndex = i * ratio;
+            const index = Math.floor(inputIndex);
+            const fraction = inputIndex - index;
+            
+            if (index + 1 < inputData.length) {
+                // 线性插值
+                outputData[i] = inputData[index] * (1 - fraction) + inputData[index + 1] * fraction;
+            } else {
+                outputData[i] = inputData[index] || 0;
+            }
+        }
+        
+        return outputData;
     }
 
     async recognizeAudio(audioByteArray) {
